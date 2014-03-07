@@ -1,0 +1,119 @@
+<html>
+<head>
+<title>E8</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+<style>
+
+body {
+    margin: 0px;
+}
+table {
+    border-collapse: collapse;
+}
+th, td {
+    padding: 0px;
+}
+
+</style>
+</head>
+<body>
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="http://dglittle.github.io/gl519/index.js"></script>
+<script src="utils.js"></script>
+<script src="particles.js"></script>
+<script>
+
+function normalizeCoord(v, i) {
+    var left = 1 - v[i] * v[i]
+    var den = 0
+    for (var j = 0; j < v.length; j++) {
+        if (j != i) den += v[j] * v[j]
+    }
+    for (var j = 0; j < v.length; j++) {
+        if (j != i) v[j] = Math.sqrt(left * (v[j] * v[j] / den)) * (v[j] < 0 ? -1 : 1)
+    }
+    return v
+}
+
+function drawSomeStuff(w, h) {
+    var c = $('<canvas/>').attr('width', w).attr('height', h)
+    var g = c.get()[0].getContext("2d")
+    g.setTransform(w/3, 0, 0, -h/3, w/2, h/2)
+    g.lineWidth = 1/w
+
+    var H = [0, 0.67, -0.66, 0, -0.1, 0, 0.34, 0]
+    var V = [0.92, 0, 0, 0.09, 0, 0.38, 0, 0.02]
+    H[0] = Math.sin(_.lerp(0, 0, 1000, tau, g_x))
+    V[0] = -Math.sin(_.lerp(0, 0, 1000, tau, g_y))
+    normalizeCoord(H, 0)
+    normalizeCoord(V, 0)
+    // var H = [1, 0, 0, 0, 0, 0, 0, 0]
+    // var V = [0, 1, 0, 0, 0, 0, 0, 0]
+
+    _.each(trialities, function (t) {
+        var locs = _.map(t, function (t) {
+            return [
+                dot(H, particles[t - 1].e8coord),
+                dot(V, particles[t - 1].e8coord)
+            ]
+        })
+        g.beginPath()
+        g.moveTo(locs[2][0], locs[2][1])
+        for (var i = 0; i < 3; i++) {
+            g.lineTo(locs[i][0], locs[i][1])
+        }
+        g.strokeStyle = 'black'
+        g.stroke()
+    })
+
+    _.each(particles, function (p) {
+        var pos = p.e8coord
+        var x = dot(H, pos)
+        var y = dot(V, pos)
+        var color = colorMap[p.color]
+
+        g.beginPath()
+        g.arc(x, y, 0.02, 0, tau)
+        g.fillStyle = color
+        g.fill()
+    })
+
+    return c
+}
+
+$(function () {
+    g_x = 0
+    g_y = 0
+
+    var w = $(window).width()
+    var h = $(window).height()
+    var size = Math.min(w, h)
+
+    $('body').append(drawSomeStuff(size, size))
+
+    var lastX = 0
+    var lastY = 0
+    var on = false
+    document.onmousedown = function (e) {
+        lastX = e.x
+        lastY = e.y
+        on = true
+    }
+    document.onmousemove = function (e) {
+        if (on) {
+            g_x += e.x - lastX
+            g_y += e.y - lastY
+            lastX = e.x
+            lastY = e.y
+            $('body').empty().append(drawSomeStuff(size, size))
+        }
+    }
+    document.onmouseup = function (e) {
+        on = false
+    }
+})
+
+</script>
+
+</body>
+</html>
