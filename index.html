@@ -111,6 +111,14 @@ $(function () {
     document.onmouseup = function (e) {
         on = false
     }
+
+    $(window).resize(function () {
+        w = $('body')[0].clientWidth
+        h = $('body')[0].clientHeight
+        size = Math.min(w, h)
+
+        $('body').empty().append(drawSomeStuff(size, size))
+    })
 })
 
 </script>
