@@ -100,7 +100,7 @@ function drawSomeStuff(w, h) {
     var sizeMap = {
         's' : .75,
         'm' : .85,
-        'l' : 1.0
+        'b' : 1.0
     }
     function glyph(x, y, scale, sym) {
         var size = scale * sizeMap[sym[0]]
@@ -121,19 +121,21 @@ function drawSomeStuff(w, h) {
         var scale = 0.1
 
         g.beginPath()
-        g.fillStyle = color
         var size = p.symbol[0] == 's' ? .8 : 1
         var sym = p.symbol.slice(1)
         if (sym == 'cir') {
             circle(x, y, size * scale / 2)
-        } else if (p.symbol == 'squ') {
+        } else if (sym == 'squ') {
             square(x, y, size * .4 * scale)
-        } else if (p.symbol == 'dia') {
+        } else if (sym == 'dia') {
             dia(x, y, size * .4 * Math.sqrt(2) * scale)
         } else {
             glyph(x, y, scale, p.symbol)
         }
+        g.fillStyle = color
         g.fill()
+        g.strokeStyle = 'black'
+        g.stroke()
     })
 
     return c
