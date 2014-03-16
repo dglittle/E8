@@ -66,15 +66,73 @@ function drawSomeStuff(w, h) {
         g.stroke()
     })
 
+    function circle(x, y, size) {
+        g.arc(x, y, size, 0, tau)
+    }
+    function square(x, y, size) {
+        g.moveTo(x - size, y - size)
+        g.lineTo(x - size, y + size)
+        g.lineTo(x + size, y + size)
+        g.lineTo(x + size, y - size)
+        g.lineTo(x - size, y - size)
+    }
+    function dia(x, y, size) {
+        g.moveTo(x, y - size)
+        g.lineTo(x - size, y)
+        g.lineTo(x, y + size)
+        g.lineTo(x + size, y)
+        g.lineTo(x, y - size)
+    }
+    var glyphu = [
+        [-1/2, -1/(2 * Math.sqrt(3))],
+        [-1/4, 1/(4 * Math.sqrt(3))],
+        [-1/2, 1/Math.sqrt(3)],
+        [0, 1/(Math.sqrt(3))],
+        [1/2, -1/(2 * Math.sqrt(3))]
+    ]
+    var glyphd = [
+        [-1/2, -1/(2 * Math.sqrt(3))],
+        [-3/4, 1/(4 * Math.sqrt(3))],
+        [-1/4, 1/(4 * Math.sqrt(3))],
+        [0, 1/(Math.sqrt(3))],
+        [1/2, -1/(2 * Math.sqrt(3))]
+    ]
+    var sizeMap = {
+        's' : .75,
+        'm' : .85,
+        'l' : 1.0
+    }
+    function glyph(x, y, scale, sym) {
+        var size = scale * sizeMap[sym[0]]
+        var mx = size * (sym[1] == 'l' ? 1 : -1)
+        var my = size * (sym[3] == 'p' ? 1 : -1)
+        var gl = (sym[2] == 'u') == (sym[3] == 'p') ? glyphu : glyphd
+        g.moveTo(x + mx * gl[gl.length - 1][0], y + my * gl[gl.length - 1][1])
+        for (var i = 0; i < gl.length; i++) {
+            g.lineTo(x + mx * gl[i][0], y + my * gl[i][1])
+        }
+    }
     _.each(particles, function (p) {
         var pos = p.e8coord
         var x = dot(H, pos)
         var y = dot(V, pos)
         var color = colorMap[p.color]
 
+        var scale = 0.1
+
         g.beginPath()
-        g.arc(x, y, 0.02, 0, tau)
         g.fillStyle = color
+        var size = p.symbol[0] == 's' ? .8 : 1
+        var sym = p.symbol.slice(1)
+        if (sym == 'cir') {
+            circle(x, y, size * scale / 2)
+        } else if (p.symbol == 'squ') {
+            square(x, y, size * .4 * scale)
+        } else if (p.symbol == 'dia') {
+            dia(x, y, size * .4 * Math.sqrt(2) * scale)
+        } else {
+            glyph(x, y, scale, p.symbol)
+        }
         g.fill()
     })
 
