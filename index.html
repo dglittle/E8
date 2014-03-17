@@ -1,11 +1,13 @@
 <html>
 <head>
+<meta charset='utf-8'>
 <title>E8</title>
 <meta name="viewport" content="width=device-width, user-scalable=no">
 <style>
 
 body {
     margin: 0px;
+    font-family: sans-serif;
 }
 table {
     border-collapse: collapse;
@@ -35,48 +37,38 @@ function normalizeCoord(v, i) {
     return v
 }
 
-function drawSomeStuff(w, h) {
-    var c = $('<canvas/>').attr('width', w).attr('height', h)
-    var g = c.get()[0].getContext("2d")
-    g.setTransform(w/3, 0, 0, -h/3, w/2, h/2)
-    g.lineWidth = 1/w
+function p2p_id_to_color(id) {
+    var low = id % 16
+    var high = Math.floor(id / 16)
+    var r = low * 16 + low
+    var g = high * 16 + high
+    var b = high * 16 + low
+    return 'rgb(' + r + ',' + g + ',' + b + ')'
+}
 
-    var H = [0, 0.67, -0.66, 0, -0.1, 0, 0.34, 0]
-    var V = [0.92, 0, 0, 0.09, 0, 0.38, 0, 0.02]
-    H[0] = Math.sin(_.lerp(0, 0, 1000, tau, g_x))
-    V[0] = -Math.sin(_.lerp(0, 0, 1000, tau, g_y))
-    normalizeCoord(H, 0)
-    normalizeCoord(V, 0)
-    // var H = [1, 0, 0, 0, 0, 0, 0, 0]
-    // var V = [0, 1, 0, 0, 0, 0, 0, 0]
+function p2p_color_to_id(r, g, b, a) {
+    if (a != 255) return
+    var low = r % 16
+    if (low != Math.floor(r / 16)) return
+    var high = g % 16
+    if (high != Math.floor(g / 16)) return
+    if (high != Math.floor(b / 16)) return
+    if (low != b % 16) return
+    return high * 16 + low
+}
 
-    _.each(trialities, function (t) {
-        var locs = _.map(t, function (t) {
-            return [
-                dot(H, particles[t - 1].e8coord),
-                dot(V, particles[t - 1].e8coord)
-            ]
-        })
-        g.beginPath()
-        g.moveTo(locs[2][0], locs[2][1])
-        for (var i = 0; i < 3; i++) {
-            g.lineTo(locs[i][0], locs[i][1])
-        }
-        g.strokeStyle = 'black'
-        g.stroke()
-    })
-
-    function circle(x, y, size) {
+;(function () {
+    function circle(g, x, y, size) {
         g.arc(x, y, size, 0, tau)
     }
-    function square(x, y, size) {
+    function square(g, x, y, size) {
         g.moveTo(x - size, y - size)
         g.lineTo(x - size, y + size)
         g.lineTo(x + size, y + size)
         g.lineTo(x + size, y - size)
         g.lineTo(x - size, y - size)
     }
-    function dia(x, y, size) {
+    function dia(g, x, y, size) {
         g.moveTo(x, y - size)
         g.lineTo(x - size, y)
         g.lineTo(x, y + size)
@@ -102,7 +94,7 @@ function drawSomeStuff(w, h) {
         'm' : .85,
         'b' : 1.0
     }
-    function glyph(x, y, scale, sym) {
+    function glyph(g, x, y, scale, sym) {
         var size = scale * sizeMap[sym[0]]
         var mx = size * (sym[1] == 'l' ? 1 : -1)
         var my = size * (sym[3] == 'p' ? 1 : -1)
@@ -112,73 +104,292 @@ function drawSomeStuff(w, h) {
             g.lineTo(x + mx * gl[i][0], y + my * gl[i][1])
         }
     }
-    _.each(particles, function (p) {
-        var pos = p.e8coord
-        var x = dot(H, pos)
-        var y = dot(V, pos)
-        var color = colorMap[p.color]
-
-        var scale = 0.1
-
+    renderParticle = function (g, x, y, scale, lineWidth, p, p2p) {
+        if (p2p) p2p = p2p_id_to_color(p.id)
         g.beginPath()
         var size = p.symbol[0] == 's' ? .8 : 1
         var sym = p.symbol.slice(1)
         if (sym == 'cir') {
-            circle(x, y, size * scale / 2)
+            circle(g, x, y, size * scale / 2)
         } else if (sym == 'squ') {
-            square(x, y, size * .4 * scale)
+            square(g, x, y, size * .4 * scale)
         } else if (sym == 'dia') {
-            dia(x, y, size * .4 * Math.sqrt(2) * scale)
+            dia(g, x, y, size * .4 * Math.sqrt(2) * scale)
         } else {
-            glyph(x, y, scale, p.symbol)
+            glyph(g, x, y, scale, p.symbol)
         }
-        g.fillStyle = color
+        g.fillStyle = p2p || colorMap[p.color]
         g.fill()
-        g.strokeStyle = 'black'
+        g.strokeStyle = p2p || 'black'
+        g.lineWidth = lineWidth
         g.stroke()
+    }
+})();
+
+function drawVisualization(w, h) {
+
+    var pixelToParticleMap = null
+
+    function updatePixelToParticleMap() {
+        var c = draw(true)
+        var g = c[0].getContext('2d')
+        pixelToParticleMap = g.getImageData(0, 0, w, h).data
+    }
+
+    function draw(p2p) {
+        var c = $('<canvas/>').attr('width', w).attr('height', h)
+        var g = c[0].getContext('2d')
+        g.setTransform(w/3, 0, 0, -h/3, w/2, h/2)
+        var unitWidth = 3/w
+
+        var H = [0, 0.67, -0.66, 0, -0.1, 0, 0.34, 0]
+        var V = [0.92, 0, 0, 0.09, 0, 0.38, 0, 0.02]
+        H[0] = Math.sin(_.lerp(0, 0, 1000, tau, g_m.rotate.x))
+        V[0] = -Math.sin(_.lerp(0, 0, 1000, tau, g_m.rotate.y))
+        normalizeCoord(H, 0)
+        normalizeCoord(V, 0)
+        // var H = [1, 0, 0, 0, 0, 0, 0, 0]
+        // var V = [0, 1, 0, 0, 0, 0, 0, 0]
+
+        if (g_m.showTriality && !p2p) {
+            _.each(trialities, function (t) {
+                var locs = _.map(t, function (t) {
+                    return [
+                        dot(H, particles[t - 1].e8coord),
+                        dot(V, particles[t - 1].e8coord)
+                    ]
+                })
+                g.beginPath()
+                g.moveTo(locs[2][0], locs[2][1])
+                for (var i = 0; i < 3; i++) {
+                    g.lineTo(locs[i][0], locs[i][1])
+                }
+                g.strokeStyle = 'black'
+                g.lineWidth = unitWidth / 3
+                g.stroke()
+            })
+        }
+
+        _.each(particles, function (p) {
+            var pos = p.e8coord
+            var x = dot(H, pos)
+            var y = dot(V, pos)
+            if (!p2p && g_m.interactions.over == p.id) {
+                renderParticle(g, x, y, 0.1, unitWidth * 3, p)
+            }
+            renderParticle(g, x, y, 0.1, unitWidth, p, p2p)
+        })
+
+        return c
+    }
+
+    var d = $('<div/>')
+    var updateP2P = true
+    function update() {
+        d.empty().append(draw())
+        if (updateP2P)
+            updatePixelToParticleMap()
+        else
+            pixelToParticleMap = null
+    }
+
+    update()
+    grabMouseRelative(d, function (dx, dy) {
+        updateP2P = false
+        beginModelChange()
+        g_m.rotate.x += dx
+        g_m.rotate.y += dy
+        endModelChange()
+    }, function () {
+        updateP2P = true
+        update()
     })
 
-    return c
+    d.on('mousemove', function (e) {
+        if (pixelToParticleMap) {
+            var pos = d.offset()
+            var x = e.pageX - pos.left
+            var y = e.pageY - pos.top
+            var base = x*4 + y*4*w
+
+            var id = p2p_color_to_id(pixelToParticleMap[base], pixelToParticleMap[base+1], pixelToParticleMap[base+2], pixelToParticleMap[base+3])
+            if (id) {
+                beginModelChange()
+                g_m.interactions.over = id
+                endModelChange()
+                return
+            }
+        }
+        beginModelChange()
+        g_m.interactions.over = 0
+        endModelChange()
+    })
+
+    d.addClass('onModelChange')[0].onModelChange = function () {
+        if (isModelDifferent('showAxes', 'showTriality', 'rotate.x', 'rotate.y', 'interactions.over', 'interactions.selection1', 'interactions.selection2', 'interactions.result')) {
+            update()
+        }
+    }
+
+    return d
+}
+
+function drawInteractions() {
+    function drawCell(content, cols, align) {
+        var c = $('<td width="' + ((cols || 1) * 6.666666666) + '%" colspan="' + (cols || 1) + '"/>')
+        c.attr('align', align || 'middle')
+        if (typeof(content) == 'string')
+            c.append($('<div style="max-height:34px;vertical-align:middle;overflow:hidden;"/>').text(content))
+        else
+            c.append(content)
+        return c
+    }
+    function addParticle(r, p, theory) {
+        r.append(drawCell(p.label, 3, 'left'))
+        r.append(drawCell('X'))
+
+        var size = 34
+        var c = $('<canvas/>').attr('width', size).attr('height', size)
+        var g = c.get()[0].getContext("2d")
+        g.setTransform(size/2, 0, 0, -size/2, size/2, size/2)
+        renderParticle(g, 0, 0, 1, 1/size, p)
+        r.append(drawCell(c))
+
+        _.each(p[theory + 'coordlbl'].split(/,/), function (a) {
+            function formatNumber(a) {
+                a = a.replace(/SQRT\((.*?)\)/g, function (_0, _1) {
+                    return '&radic;<span style="text-decoration:overline">' + _1 + '</span>'
+
+                })
+                a = a.replace(/[\(\)]/g, '')
+                return a
+            }
+            function drawFraction(a) {
+                a = a.split(/\//)
+                if (a.length == 2) {
+                    var t = $('<table style="font-size:small;text-align:center"/>')
+                    t.append($('<tr style="border-bottom:1px solid black"/>').append($('<td/>').html(formatNumber(a[0]))))
+                    t.append($('<tr/>').append($('<td/>').html(formatNumber(a[1]))))
+                    return t
+                } else {
+                    return $('<div/>').text(a)
+                }
+            }
+            r.append(drawCell(drawFraction(a)))
+        })
+    }
+    function drawParticles(theory) {
+        var headers = ['Over', 'Selection1', 'Selection2', 'Result']
+        return _.map(headers, function (h, i) {
+            var r = $('<tr height="34px"/>')
+            r.append(drawCell(h, 2, 'right').css('padding-right', '20px')).css('background', i % 2 == 0 ? 'white' : '#e0e0e0')
+
+            var p = g_m.interactions[h.toLowerCase()]
+            if (p) {
+                p = particles[1*p - 1]
+                addParticle(r, p, theory)
+            }
+            return r
+        })
+    }
+    function drawHeader() {
+        var r = $('<tr height="34px" style="background: linear-gradient(to bottom, white, lightgrey);"/>')
+        r.append(drawCell('Deselect All', 2, 'left'))
+
+        var checks = $('<div style="font-size:small"/>').append(createCheckBox('Show Axes', g_m.showAxes, function () {
+            beginModelChange()
+            g_m.showAxes = !g_m.showAxes
+            endModelChange()
+        }).css('margin-right', '10px')).append(createCheckBox('Show Triality', g_m.showTriality, function () {
+            beginModelChange()
+            g_m.showTriality = !g_m.showTriality
+            endModelChange()
+        }))
+        r.append(drawCell(checks, 4, 'left'))
+
+        var size = 34
+        var c = $('<canvas/>').attr('width', size).attr('height', size)
+        var g = c.get()[0].getContext("2d")
+        g.setTransform(size/2, 0, 0, -size/2, size/2, size/2)
+        renderParticle(g, 0.3, 0.3, 1, 1/size, { symbol : 'scir', color : 'mrora' })
+        renderParticle(g, 0, 0, 1, 1/size, { symbol : 'msqu', color : 'mblue' })
+        renderParticle(g, -0.3, -0.3, 1, 1/size, { symbol : 'sdia', color : 'mgree' })
+        r.append(drawCell(c))
+
+        r.append(drawCell($('<i style="font-family:serif">ω<sub>S</sub></i>')))
+        r.append(drawCell($('<i style="font-family:serif">iω<sub>T</sub></i>')))
+        r.append(drawCell($('<i style="font-family:serif">W</i>')))
+        r.append(drawCell($('<i style="font-family:serif">Y</i>')))
+        r.append(drawCell($('<i style="font-family:serif">iw</i>')))
+        r.append(drawCell($('<i style="font-family:serif">X</i>')))
+        r.append(drawCell($('<i style="font-family:serif">g<sup>3</sup></i>')))
+        r.append(drawCell($('<i style="font-family:serif">g<sup>8</sup></i>')))
+        return r
+    }
+
+    var d = $('<div/>')
+    function update() {
+        var t = $('<table style="width:800px;margin:5px"/>')
+        t.append(drawHeader())
+        t.append(drawParticles('gut'))
+        d.empty().append(t)
+    }
+    update()
+
+    d.addClass('onModelChange')[0].onModelChange = function () {
+        if (isModelDifferent('showAxes', 'showTriality', 'interactions.over', 'interactions.selection1', 'interactions.selection2', 'interactions.result')) {
+            update()
+        }
+    }
+    return d
+}
+
+function updateMain() {
+    w = $('body')[0].clientWidth
+    h = $('body')[0].clientHeight
+    size = Math.min(w, h - 180)
+
+    var d = $('<div/>').width(w).height(h)
+    d.append(_.splitVert(1, 180, drawVisualization(size, size), drawInteractions()))
+    $('body').empty().append(d)
+}
+
+var g_m = null
+var g_old_m = null
+function beginModelChange() {
+    g_old_m = _.deepClone(g_m)
+}
+function endModelChange() {
+    _.each($('.onModelChange').get(), function (o) {
+        o.onModelChange()
+    })
+}
+function isModelDifferent() {
+    for (var i = 0; i < arguments.length; i++) {
+        var a = arguments[i]
+        if (eval('g_m.' + a + ' != g_old_m.' + a)) return true
+    }
+    return false
 }
 
 $(function () {
-    g_x = 0
-    g_y = 0
-
-    var w = $(window).width()
-    var h = $(window).height()
-    var size = Math.min(w, h)
-
-    $('body').append(drawSomeStuff(size, size))
-
-    var lastX = 0
-    var lastY = 0
-    var on = false
-    document.onmousedown = function (e) {
-        lastX = e.x
-        lastY = e.y
-        on = true
-    }
-    document.onmousemove = function (e) {
-        if (on) {
-            g_x += e.x - lastX
-            g_y += e.y - lastY
-            lastX = e.x
-            lastY = e.y
-            $('body').empty().append(drawSomeStuff(size, size))
+    g_m = {
+        showAxes : true,
+        showTriality : true,
+        rotate : {
+            x : 0,
+            y : 0
+        },
+        interactions : {
+            over : 0,
+            selection1 : 65,
+            selection2 : 66,
+            result : 67
         }
     }
-    document.onmouseup = function (e) {
-        on = false
-    }
 
-    $(window).resize(function () {
-        w = $('body')[0].clientWidth
-        h = $('body')[0].clientHeight
-        size = Math.min(w, h)
-
-        $('body').empty().append(drawSomeStuff(size, size))
-    })
+    $(window).resize(updateMain)
+    updateMain()
 })
 
 </script>

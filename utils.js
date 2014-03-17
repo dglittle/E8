@@ -1,4 +1,69 @@
 
+function createCheckBox(label, check, cb) {
+    var d = $('<span/>')
+
+    var c = $('<input type="checkbox"/>')
+    var id = _.randomString(10, /[a-z]/)
+    c.attr('id', id)
+    c.prop('checked', !!check)
+    if (cb) c.change(cb)
+    d.append(c)
+
+    if (typeof(label) == "string") label = $('<span/>').text(label)
+    d.append($('<label for="' + id + '"/>').append(label))
+
+    return d
+}
+
+function grabMouse(d, cb, onUp) {
+    d.on('mousedown', function (e) {
+        e.preventDefault()
+        cb(e.pageX, e.pageY)
+
+        var oldMove = document.onmousemove
+        document.onmousemove = function (e) {
+            cb(e.pageX, e.pageY)
+        }
+        
+        var oldUp = document.onmouseup
+        document.onmouseup = function (e) {
+            if (onUp) onUp()
+            document.onmousemove = oldMove
+            document.onmouseup = oldUp
+        }
+    })
+    d.on('touchstart', function (e) {
+        e.preventDefault()
+        cb(e.touches[0].pageX, e.touches[0].pageY)
+
+        var oldMove = document.ontouchmove
+        document.ontouchmove = function (e) {
+            e.preventDefault()
+            cb(e.touches[0].pageX, e.touches[0].pageY)
+        }
+
+        var oldEnd = document.ontouchend;
+        var oldCancel = document.ontouchcancel
+        document.ontouchend = document.ontouchcancel = function (e) {
+            if (onUp) onUp()
+            document.ontouchmove = oldMove
+            document.ontouchend = oldEnd
+            document.ontouchcancel = oldCancel
+        }
+    })
+}
+
+function grabMouseRelative(d, cb, onUp) {
+    var lastPos = null
+    grabMouse(d, function (x, y) {
+        if (lastPos) cb(x - lastPos[0], y - lastPos[1])
+        lastPos = [x, y]
+    }, function () {
+        lastPos = null
+        if (onUp) onUp()
+    })
+}
+
 var tau = Math.PI * 2
 
 function dot(x, y) {
@@ -154,16 +219,6 @@ $.fn.myHover = function (s, that) {
     })
     return this
 }
-
-$.fn.addLabel = function (d) {
-    if (typeof(d) == "string") d = $('<span/>').text(d)
-        
-    var id = _.randomString(10, /[a-z]/)
-    this.attr('id', id)
-    this.after($('<label for="' + id + '"/>').append(d))
-    return this
-}
-
 
 function rotate(me, amount) {
     var s = 'rotate(' + amount + 'deg)'
