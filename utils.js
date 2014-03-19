@@ -56,15 +56,32 @@ function grabMouse(d, cb, onUp) {
 function grabMouseRelative(d, cb, onUp) {
     var lastPos = null
     grabMouse(d, function (x, y) {
-        if (lastPos) cb(x - lastPos[0], y - lastPos[1])
+        if (!lastPos) lastPos = [x, y]
+        cb(x - lastPos[0], y - lastPos[1], x, y)
         lastPos = [x, y]
     }, function () {
+        if (onUp) onUp(lastPos[0], lastPos[1])
         lastPos = null
-        if (onUp) onUp()
     })
 }
 
 var tau = Math.PI * 2
+
+function sub(x, y) {
+    var sum = []
+    for (var i = 0; i < x.length; i++) {
+        sum.push(x[i] - y[i])
+    }
+    return sum
+}
+
+function distSq(x) {
+    return dot(x, x)
+}
+
+function dist(x) {
+    return Math.sqrt(distSq(x))
+}
 
 function dot(x, y) {
     var sum = 0

@@ -59,21 +59,24 @@ function p2p_color_to_id(r, g, b, a) {
 
 ;(function () {
     function circle(g, x, y, size) {
+        g.beginPath()
         g.arc(x, y, size, 0, tau)
     }
     function square(g, x, y, size) {
+        g.beginPath()
         g.moveTo(x - size, y - size)
         g.lineTo(x - size, y + size)
         g.lineTo(x + size, y + size)
         g.lineTo(x + size, y - size)
-        g.lineTo(x - size, y - size)
+        g.closePath()
     }
     function dia(g, x, y, size) {
-        g.moveTo(x, y - size)
+        g.beginPath()
         g.lineTo(x - size, y)
         g.lineTo(x, y + size)
         g.lineTo(x + size, y)
         g.lineTo(x, y - size)
+        g.closePath()
     }
     var glyphu = [
         [-1/2, -1/(2 * Math.sqrt(3))],
@@ -99,14 +102,17 @@ function p2p_color_to_id(r, g, b, a) {
         var mx = size * (sym[1] == 'l' ? 1 : -1)
         var my = size * (sym[3] == 'p' ? 1 : -1)
         var gl = (sym[2] == 'u') == (sym[3] == 'p') ? glyphu : glyphd
-        g.moveTo(x + mx * gl[gl.length - 1][0], y + my * gl[gl.length - 1][1])
-        for (var i = 0; i < gl.length; i++) {
-            g.lineTo(x + mx * gl[i][0], y + my * gl[i][1])
-        }
-    }
-    renderParticle = function (g, x, y, scale, lineWidth, p, p2p) {
-        if (p2p) p2p = p2p_id_to_color(p.id)
         g.beginPath()
+        for (var i = 0; i < gl.length; i++) {
+            if (i == 0)
+                g.moveTo(x + mx * gl[i][0], y + my * gl[i][1])
+            else
+                g.lineTo(x + mx * gl[i][0], y + my * gl[i][1])
+        }
+        g.closePath()
+    }
+    renderParticle = function (g, x, y, scale, lineWidth, p, p2p, justLine) {
+        if (p2p) p2p = p2p_id_to_color(p.id)
         var size = p.symbol[0] == 's' ? .8 : 1
         var sym = p.symbol.slice(1)
         if (sym == 'cir') {
@@ -118,9 +124,11 @@ function p2p_color_to_id(r, g, b, a) {
         } else {
             glyph(g, x, y, scale, p.symbol)
         }
-        g.fillStyle = p2p || colorMap[p.color]
-        g.fill()
-        g.strokeStyle = p2p || 'black'
+        if (!justLine) {
+            g.fillStyle = p2p || colorMap[p.color]
+            g.fill()
+        }
+        g.strokeStyle = p2p || justLine || 'black'
         g.lineWidth = lineWidth
         g.stroke()
     }
@@ -151,14 +159,49 @@ function drawVisualization(w, h) {
         // var H = [1, 0, 0, 0, 0, 0, 0, 0]
         // var V = [0, 1, 0, 0, 0, 0, 0, 0]
 
+        function projectParticle(id) {
+            var p = particles[id - 1]
+            return [dot(H, p.e8coord), dot(V, p.e8coord)]
+        }
+
+        var scale = 0.1
+
+        if (!p2p && g_m.interactions.interaction) {
+            var x = _.map(g_m.interactions.interaction, projectParticle)
+
+            g.beginPath()
+            g.moveTo(x[0][0], x[0][1])
+            g.lineTo(x[1][0], x[1][1])
+            g.lineWidth = unitWidth * 7
+            g.strokeStyle = 'yellow'
+            g.stroke()
+
+            g.beginPath()
+            g.arc(x[0][0], x[0][1], scale, 0, tau)
+            g.fillStyle = 'yellow'
+            g.fill()
+
+            g.beginPath()
+            g.arc(x[1][0], x[1][1], scale, 0, tau)
+            g.fillStyle = 'yellow'
+            g.fill()
+
+            g.beginPath()
+            g.moveTo(0, 0)
+            g.lineTo(x[2][0], x[2][1])
+            g.lineWidth = unitWidth * 7
+            g.strokeStyle = 'green'
+            g.stroke()
+
+            g.beginPath()
+            g.arc(x[2][0], x[2][1], scale, 0, tau)
+            g.fillStyle = 'green'
+            g.fill()
+        }
+
         if (g_m.showTriality && !p2p) {
             _.each(trialities, function (t) {
-                var locs = _.map(t, function (t) {
-                    return [
-                        dot(H, particles[t - 1].e8coord),
-                        dot(V, particles[t - 1].e8coord)
-                    ]
-                })
+                var locs = _.map(t, projectParticle)
                 g.beginPath()
                 g.moveTo(locs[2][0], locs[2][1])
                 for (var i = 0; i < 3; i++) {
@@ -170,14 +213,21 @@ function drawVisualization(w, h) {
             })
         }
 
+        var noInteractionHighlight = _.makeSet(g_m.interactions.interaction || [])
+
         _.each(particles, function (p) {
             var pos = p.e8coord
             var x = dot(H, pos)
             var y = dot(V, pos)
-            if (!p2p && g_m.interactions.over == p.id) {
-                renderParticle(g, x, y, 0.1, unitWidth * 3, p)
+            if (!p2p) {
+                if (g_selection1_interactions[p.id] && !noInteractionHighlight[p.id])
+                    renderParticle(g, x, y, scale, unitWidth * 6, p, null, 'cyan')
+                if (g_m.interactions.selection1 == p.id)
+                    renderParticle(g, x, y, scale, unitWidth * 7, p, null, 'blue')
+                if (g_m.interactions.over == p.id)
+                    renderParticle(g, x, y, scale, unitWidth * 3, p)
             }
-            renderParticle(g, x, y, 0.1, unitWidth, p, p2p)
+            renderParticle(g, x, y, scale, unitWidth/3, p, p2p)
         })
 
         return c
@@ -194,34 +244,63 @@ function drawVisualization(w, h) {
     }
 
     update()
-    grabMouseRelative(d, function (dx, dy) {
+    var downPos = null
+    grabMouseRelative(d, function (dx, dy, x, y) {
+        if (!downPos) downPos = [x, y]
         updateP2P = false
         beginModelChange()
         g_m.rotate.x += dx
         g_m.rotate.y += dy
         endModelChange()
-    }, function () {
+    }, function (x, y) {
         updateP2P = true
         update()
+
+        if (dist(sub([x, y], downPos)) < 5) {
+            var id = getOverParticle({ pageX : x, pageY : y })
+            if (id) {
+                beginModelChange()
+                var i = g_selection1_interactions[id]
+                if (g_m.interactions.selection1 && i) {
+                    g_m.interactions.selection2 = id
+                    g_m.interactions.result = i[0]
+                    g_m.interactions.interaction = i[1]
+                } else {
+                    g_m.interactions.selection1 = id
+                    g_m.interactions.interaction = null
+                    g_selection1_interactions = {}
+                    _.each(interactions, function (i) {
+                        if (i.indexOf(id) != -1) {
+                            var others = []
+                            _.each(i, function (i) {
+                                if (i != id)
+                                    others.push(i)
+                            })
+                            g_selection1_interactions[others[0]] = [others[1], i]
+                            g_selection1_interactions[others[1]] = [others[0], i]
+                        }
+                    })
+                }
+                endModelChange()
+            }
+        }
+        downPos = null
     })
 
-    d.on('mousemove', function (e) {
+    function getOverParticle(e) {
         if (pixelToParticleMap) {
             var pos = d.offset()
             var x = e.pageX - pos.left
             var y = e.pageY - pos.top
             var base = x*4 + y*4*w
 
-            var id = p2p_color_to_id(pixelToParticleMap[base], pixelToParticleMap[base+1], pixelToParticleMap[base+2], pixelToParticleMap[base+3])
-            if (id) {
-                beginModelChange()
-                g_m.interactions.over = id
-                endModelChange()
-                return
-            }
+            return p2p_color_to_id(pixelToParticleMap[base], pixelToParticleMap[base+1], pixelToParticleMap[base+2], pixelToParticleMap[base+3])
         }
+    }
+
+    d.on('mousemove', function (e) {
         beginModelChange()
-        g_m.interactions.over = 0
+        g_m.interactions.over = getOverParticle(e) || 0
         endModelChange()
     })
 
@@ -288,13 +367,20 @@ function drawInteractions() {
             if (p) {
                 p = particles[1*p - 1]
                 addParticle(r, p, theory)
+            } else {
+                r.append(drawCell($('<div/>'), 13))
             }
             return r
         })
     }
     function drawHeader() {
         var r = $('<tr height="34px" style="background: linear-gradient(to bottom, white, lightgrey);"/>')
-        r.append(drawCell('Deselect All', 2, 'left'))
+        r.append(drawCell($('<button/>').text('Deselect All').click(function () {
+            beginModelChange()
+            g_m.interactions = {}
+            g_selection1_interactions = {}
+            endModelChange()
+        }), 2, 'left'))
 
         var checks = $('<div style="font-size:small"/>').append(createCheckBox('Show Axes', g_m.showAxes, function () {
             beginModelChange()
@@ -381,12 +467,14 @@ $(function () {
             y : 0
         },
         interactions : {
-            over : 0,
-            selection1 : 65,
-            selection2 : 66,
-            result : 67
+            over : null,
+            selection1 : null,
+            selection2 : null,
+            result : null,
+            interaction : null
         }
     }
+    g_selection1_interactions = {}
 
     $(window).resize(updateMain)
     updateMain()
