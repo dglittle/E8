@@ -267,6 +267,8 @@ function drawVisualization(w, h) {
                     g_m.interactions.interaction = i[1]
                 } else {
                     g_m.interactions.selection1 = id
+                    g_m.interactions.selection2 = null
+                    g_m.interactions.result = null
                     g_m.interactions.interaction = null
                     g_selection1_interactions = {}
                     _.each(interactions, function (i) {
