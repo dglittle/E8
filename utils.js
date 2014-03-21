@@ -15,6 +15,13 @@ function createCheckBox(label, check, cb) {
     return d
 }
 
+function getRelPos(d, e) {
+    var pos = d.offset()
+    var x = e.pageX - pos.left
+    var y = e.pageY - pos.top
+    return [x, y]
+}
+
 function grabMouse(d, cb, onUp) {
     d.on('mousedown', function (e) {
         e.preventDefault()
