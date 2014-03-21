@@ -67,12 +67,49 @@ function grabMouseRelative(d, cb, onUp) {
 
 var tau = Math.PI * 2
 
-function sub(x, y) {
+function zeros(n) {
     var sum = []
-    for (var i = 0; i < x.length; i++) {
-        sum.push(x[i] - y[i])
+    for (var i = 0; i < n; i++)
+        sum.push(0)
+    return sum
+}
+
+function sum(x) {
+    var sum = 0
+    for (var i = 0; i < x.length; i++)
+        sum += x[i]
+    return sum
+}
+
+function op(x, y, op) {
+    var sum = []
+    var n = (x instanceof Array) ? x.length : y.length
+    for (var i = 0; i < n; i++) {
+        sum.push(op(
+            (x instanceof Array) ? x[i] : x,
+            (y instanceof Array) ? y[i] : y))
     }
     return sum
+}
+
+function sub(x, y) {
+    return op(x, y, function (x, y) { return x - y })
+}
+
+function add(x, y) {
+    return op(x, y, function (x, y) { return x + y })
+}
+
+function mul(x, y) {
+    return op(x, y, function (x, y) { return x * y })
+}
+
+function div(x, y) {
+    return op(x, y, function (x, y) { return x / y })
+}
+
+function dot(x, y) {
+    return sum(mul(x, y))
 }
 
 function distSq(x) {
@@ -83,12 +120,8 @@ function dist(x) {
     return Math.sqrt(distSq(x))
 }
 
-function dot(x, y) {
-    var sum = 0
-    for (var i = 0; i < x.length; i++) {
-        sum += x[i] * y[i]
-    }
-    return sum
+function norm(x) {
+    return div(x, dist(x))
 }
 
 function comparator(f, desc) {

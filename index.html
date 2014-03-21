@@ -25,16 +25,38 @@ th, td {
 <script src="particles.js"></script>
 <script>
 
-function normalizeCoord(v, i) {
-    var left = 1 - v[i] * v[i]
-    var den = 0
-    for (var j = 0; j < v.length; j++) {
-        if (j != i) den += v[j] * v[j]
+var g_rowHeight = 34
+
+// math formatting
+var m = {
+    x : function (x) {
+        return $('<span style="font-family:serif"/>').text(x)
+    },
+    i : function (x) {
+        return $('<i style="font-family:serif"/>').text(x)
+    },
+    f : function (a, b) {
+        return $('<table/>').append(
+            $('<tr style="border-bottom:1px solid black"/>').append($('<td align="middle"/>').append(a.css('font-size', 'small')))
+        ).append(
+            $('<tr/>').append($('<td align="middle"/>').append(b.css('font-size', 'small')))
+        )
+    },
+    supsub : function (a, b) {
+        if (!a) a = $('<span>&nbsp;</span>')
+        if (!b) b = $('<span>&nbsp;</span>')
+        return $('<table/>').append(
+            $('<tr/>').append($('<td/>').append(a.css('font-size', 'small')))
+        ).append(
+            $('<tr/>').append($('<td/>').append(b.css('font-size', 'small')))
+        )
+    },
+    c : function (a, b) {
+        return $('<table/>').append($('<tr/>').append($('<td/>').append(a)).append($('<td/>').append(b)))
+    },
+    sqrt : function (x) {
+        return m.c($('<span style="font-size:90%">&radic;</span>'), $('<div style="border-top:1px solid black"/>').append(x))
     }
-    for (var j = 0; j < v.length; j++) {
-        if (j != i) v[j] = Math.sqrt(left * (v[j] * v[j] / den)) * (v[j] < 0 ? -1 : 1)
-    }
-    return v
 }
 
 function p2p_id_to_color(id) {
@@ -150,14 +172,8 @@ function drawVisualization(w, h) {
         g.setTransform(w/3, 0, 0, -h/3, w/2, h/2)
         var unitWidth = 3/w
 
-        var H = [0, 0.67, -0.66, 0, -0.1, 0, 0.34, 0]
-        var V = [0.92, 0, 0, 0.09, 0, 0.38, 0, 0.02]
-        H[0] = Math.sin(_.lerp(0, 0, 1000, tau, g_m.rotate.x))
-        V[0] = -Math.sin(_.lerp(0, 0, 1000, tau, g_m.rotate.y))
-        normalizeCoord(H, 0)
-        normalizeCoord(V, 0)
-        // var H = [1, 0, 0, 0, 0, 0, 0, 0]
-        // var V = [0, 1, 0, 0, 0, 0, 0, 0]
+        var H = g_m.rotate.H
+        var V = g_m.rotate.V
 
         function projectParticle(id) {
             var p = particles[id - 1]
@@ -248,9 +264,68 @@ function drawVisualization(w, h) {
     grabMouseRelative(d, function (dx, dy, x, y) {
         if (!downPos) downPos = [x, y]
         updateP2P = false
+        if (dx == 0 && dy == 0) return
+
+        // H = current Horizontal view plane vector (8D)
+        // V = current Vertical view plane vector
+        // ax = horizontal rotation angle from user's horizontal mouse drag in viewport
+        // ay = vertical rotation angle from user's vertical mouse drag in viewport
+        // a = H-axis vector chosen (on left) to rotate towards
+        // A = V-axis vector chosen to rotate towards
+        // g,G = temporary vectors
+        // H', V' = result
+
+        // g = a - (a.V)V - (a.H)H
+        // G = A - (A.V)V - (A.H)H
+        // g = g/|g|
+        // G = G/|G|
+        // H' = H cos ax + g sin ax
+        // H' = H'/|H'|
+        // V' = V - (V.H')H'
+        // V' = V'/|V'|
+        // V' = V' cos ay + G sin ay
+        // V' = V'/|V'|
+
+        // for flat rotation
+        // H' = H cos - V sin
+        // V' = V cos + H sin        
+
+        var H = g_m.rotate.H
+        var V = g_m.rotate.V
+
+        var radiansPerPixel = tau / 1000
+        var ax = dx * radiansPerPixel
+        var ay = dy * radiansPerPixel
+
+        if (g_m.rotate.rotateZ) {
+            H = sub(mul(H, Math.cos(ax)), mul(V, Math.sin(ax)))
+            V = add(mul(V, Math.cos(ax)), mul(H, Math.sin(ax)))
+            var H_ = sub(mul(H, Math.cos(ay)), mul(V, Math.sin(ay)))
+            var V_ = add(mul(V, Math.cos(ay)), mul(H, Math.sin(ay)))
+            H_ = norm(H_)
+            V_ = norm(V_)
+        } else {
+            var a = zeros(8)
+            a[g_m.rotate.axes[0]] = 1
+            var A = zeros(8)
+            A[g_m.rotate.axes[1]] = 1
+
+            var g = sub(sub(a, mul(dot(a, V), V)), mul(dot(a, H), H))
+            var G = sub(sub(A, mul(dot(A, V), V)), mul(dot(A, H), H))
+            g = norm(g)
+            G = norm(G)
+
+            var H_ = add(mul(H, Math.cos(ax)), mul(g, Math.sin(ax)))
+            H_ = norm(H_)
+            V_ = sub(V, mul(dot(V, H_), H_))
+            V_ = norm(V_)
+            V_ = add(mul(V_, Math.cos(ay)), mul(G, Math.sin(ay)))
+            V_ = norm(V_)
+        }
+
         beginModelChange()
-        g_m.rotate.x += dx
-        g_m.rotate.y += dy
+        g_m.rotate.H = H_
+        g_m.rotate.V = V_
         endModelChange()
     }, function (x, y) {
         updateP2P = true
@@ -307,7 +382,19 @@ function drawVisualization(w, h) {
     })
 
     d.addClass('onModelChange')[0].onModelChange = function () {
-        if (isModelDifferent('showAxes', 'showTriality', 'rotate.x', 'rotate.y', 'interactions.over', 'interactions.selection1', 'interactions.selection2', 'interactions.result')) {
+
+        var diff = false
+        for (var i = 0; i < g_m.rotate.H.length; i++) {
+            if (g_m.rotate.H[i] != g_old_m.rotate.H[i]) {
+                diff = true
+                break
+            }
+            if (g_m.rotate.V[i] != g_old_m.rotate.V[i]) {
+                diff = true
+                break
+            }
+        }
+        if (diff || isModelDifferent('showAxes', 'showTriality', 'interactions.over', 'interactions.selection1', 'interactions.selection2', 'interactions.result')) {
             update()
         }
     }
@@ -329,41 +416,38 @@ function drawInteractions() {
         r.append(drawCell(p.label, 3, 'left'))
         r.append(drawCell('X'))
 
-        var size = 34
+        var size = g_rowHeight
         var c = $('<canvas/>').attr('width', size).attr('height', size)
         var g = c.get()[0].getContext("2d")
         g.setTransform(size/2, 0, 0, -size/2, size/2, size/2)
         renderParticle(g, 0, 0, 1, 1/size, p)
         r.append(drawCell(c))
 
-        _.each(p[theory + 'coordlbl'].split(/,/), function (a) {
+
+        function drawNumber(a) {
             function formatNumber(a) {
                 a = a.replace(/SQRT\((.*?)\)/g, function (_0, _1) {
                     return '&radic;<span style="text-decoration:overline">' + _1 + '</span>'
-
                 })
                 a = a.replace(/[\(\)]/g, '')
                 return a
             }
-            function drawFraction(a) {
-                a = a.split(/\//)
-                if (a.length == 2) {
-                    var t = $('<table style="font-size:small;text-align:center"/>')
-                    t.append($('<tr style="border-bottom:1px solid black"/>').append($('<td/>').html(formatNumber(a[0]))))
-                    t.append($('<tr/>').append($('<td/>').html(formatNumber(a[1]))))
-                    return t
-                } else {
-                    return $('<div/>').text(a)
-                }
+            a = a.split(/\//)
+            if (a.length == 2) {
+                return $('<table style="font-size:small;text-align:center"><tr style="border-bottom:1px solid black"><td>' + formatNumber(a[0]) + '</td></tr><tr><td>' + formatNumber(a[1]) + '</td></tr></table>')
+            } else {
+                return $('<div/>').html(formatNumber(a[0]))
             }
-            r.append(drawCell(drawFraction(a)))
+        }
+        _.each(p[theory + 'coordlbl'].split(/,/), function (a) {
+            r.append(drawCell(drawNumber(a)))
         })
     }
     function drawParticles(theory) {
         var headers = ['Over', 'Selection1', 'Selection2', 'Result']
         return _.map(headers, function (h, i) {
-            var r = $('<tr height="34px"/>')
-            r.append(drawCell(h, 2, 'right').css('padding-right', '20px')).css('background', i % 2 == 0 ? 'white' : '#e0e0e0')
+            var r = $('<tr height="' + g_rowHeight + 'px"/>')
+            r.append(drawCell(h, 2, 'right').css('padding-right', '20px')).css('background', i % 2 == 0 ? 'white' : '#f0f0f0')
 
             var p = g_m.interactions[h.toLowerCase()]
             if (p) {
@@ -376,7 +460,7 @@ function drawInteractions() {
         })
     }
     function drawHeader() {
-        var r = $('<tr height="34px" style="background: linear-gradient(to bottom, white, lightgrey);"/>')
+        var r = $('<tr height="' + g_rowHeight + 'px" style="background: linear-gradient(to bottom, white, lightgrey);"/>')
         r.append(drawCell($('<button/>').text('Deselect All').click(function () {
             beginModelChange()
             g_m.interactions = {}
@@ -395,7 +479,7 @@ function drawInteractions() {
         }))
         r.append(drawCell(checks, 4, 'left'))
 
-        var size = 34
+        var size = g_rowHeight
         var c = $('<canvas/>').attr('width', size).attr('height', size)
         var g = c.get()[0].getContext("2d")
         g.setTransform(size/2, 0, 0, -size/2, size/2, size/2)
@@ -404,14 +488,20 @@ function drawInteractions() {
         renderParticle(g, -0.3, -0.3, 1, 1/size, { symbol : 'sdia', color : 'mgree' })
         r.append(drawCell(c))
 
-        r.append(drawCell($('<i style="font-family:serif">ω<sub>S</sub></i>')))
-        r.append(drawCell($('<i style="font-family:serif">iω<sub>T</sub></i>')))
-        r.append(drawCell($('<i style="font-family:serif">W</i>')))
-        r.append(drawCell($('<i style="font-family:serif">Y</i>')))
-        r.append(drawCell($('<i style="font-family:serif">iw</i>')))
-        r.append(drawCell($('<i style="font-family:serif">X</i>')))
-        r.append(drawCell($('<i style="font-family:serif">g<sup>3</sup></i>')))
-        r.append(drawCell($('<i style="font-family:serif">g<sup>8</sup></i>')))
+        var headers = [
+            'ω<sub>S</sub>',
+            'iω<sub>T</sub>',
+            'W',
+            'Y',
+            'iw',
+            'X',
+            m.c(m.i('g'), m.supsub(m.x(3), null)),
+            m.c(m.i('g'), m.supsub(m.x(8), null))
+        ]
+        _.each(headers, function (h) {
+            if (typeof(h) == 'string') h = $('<i style="font-family:serif"/>').html(h)
+            r.append(drawCell(h))
+        })
         return r
     }
 
@@ -432,13 +522,226 @@ function drawInteractions() {
     return d
 }
 
+function drawRotationPanel() {
+    function drawRotate(yes, cb) {
+        var w = g_rowHeight
+        var h = g_rowHeight
+        var c = $('<canvas/>').attr('width', w).attr('height', h)
+        var g = c[0].getContext('2d')
+        g.setTransform(w/2, 0, 0, -h/2, w/2, h/2)
+        var unitWidth = 2/w
+        g.lineWidth = unitWidth
+
+        var color = yes ? 'black' : 'lightgrey'
+        var colorOver = null
+
+        function render() {
+            g.clearRect(-1, -1, 2, 2)
+
+            g.strokeStyle = colorOver || color
+            g.fillStyle = colorOver || color
+
+            g.beginPath()
+            g.arc(0, 0, .6, tau, tau/8*7)
+            g.lineWidth = 3 * unitWidth
+            g.stroke()
+
+            g.beginPath()
+            g.moveTo(.3, 0)
+            g.lineTo(.9, 0)
+            g.lineTo(.6, -.4)
+            g.closePath()
+            g.fill()
+        }
+        render()
+
+        function on(e) {
+            colorOver = 'blue'
+            render()
+        }
+        c.on('mouseover', on).on('mousemove', on)
+        c.on('mouseout', function (e) {
+            colorOver = null
+            render()
+        })
+        c.on('click', function (e) {
+            cb()
+        })
+
+        return c        
+    }
+    function drawArrowCross(horz, vert, cb) {
+        var w = g_rowHeight
+        var h = g_rowHeight
+        var c = $('<canvas/>').attr('width', w).attr('height', h)
+        var g = c[0].getContext('2d')
+        g.setTransform(w/2, 0, 0, -h/2, w/2, h/2)
+        g.lineWidth = 2/w
+
+        var circleColor = horz || vert ? 'black' : 'lightgrey'
+        var horzColor = horz ? 'black' : 'lightgrey'
+        var vertColor = vert ? 'black' : 'lightgrey'
+        var circleColorOver = null
+        var horzColorOver = null
+        var vertColorOver = null
+        function render() {
+            g.clearRect(-1, -1, 2, 2)
+
+            function renderArrow(r, color) {
+                g.rotate(r)
+                g.beginPath()
+                g.moveTo(.15, 0)
+                g.lineTo(.15, .5)
+                g.lineTo(.4, .5)
+                g.lineTo(0, 1)
+                g.lineTo(-.4, .5)
+                g.lineTo(-.15, .5)
+                g.lineTo(-.15, 0)
+                g.closePath()
+                g.fillStyle = color
+                g.fill()
+                g.setTransform(w/2, 0, 0, -h/2, w/2, h/2)
+            }
+            renderArrow(0, vertColorOver || vertColor)
+            renderArrow(tau / 4, horzColorOver || horzColor)
+            renderArrow(tau / 2, vertColorOver || vertColor)
+            renderArrow(tau / 4 * 3, horzColorOver || horzColor)
+
+            g.beginPath()
+            g.arc(0, 0, .35, 0, tau)
+            g.fillStyle = circleColorOver || circleColor
+            g.fill()
+
+            g.beginPath()
+            g.arc(0, 0, .15, 0, tau)
+            g.fillStyle = 'white'
+            g.fill()
+        }
+        render()
+
+        function getHorzVert(e) {
+            var pos = c.offset()
+            var x = _.lerp(0, -1, w, 1, e.pageX - pos.left)
+            var y = _.lerp(0, 1, h, -1, e.pageY - pos.top)
+            return [(y > -.4 && y < .4), (x > -.4 && x < .4)]
+        }
+        function on(e) {
+            var x = getHorzVert(e)
+            horzColorOver = x[0] ? 'blue' : null
+            vertColorOver = x[1] ? 'blue' : null
+            circleColorOver = x[0] || x[1] ? 'blue' : null
+            render()
+        }
+        c.on('mouseover', on).on('mousemove', on)
+        c.on('mouseout', function (e) {
+            circleColorOver = null
+            horzColorOver = null
+            vertColorOver = null
+            render()
+        })
+        c.on('click', function (e) {
+            var x = getHorzVert(e)
+            cb(x[0], x[1])
+        })
+
+        return c
+    }
+    function drawCell(content, align) {
+        var c = $('<td width="25%"/>')
+        c.attr('align', align || 'middle')
+        if (typeof(content) == 'string')
+            c.append($('<div style="max-height:' + g_rowHeight + 'px;vertical-align:middle;overflow:hidden;"/>').text(content))
+        else
+            c.append(content)
+        return c
+    }
+    function drawRow(label, i) {
+        var r = $('<tr height="' + g_rowHeight + '">')
+        r.append(drawCell($('<div style="font-family:serif;font-style:italic"/>').html(label)))
+        r.append(drawCell($('<div class="H' + i + '" style="font-family:serif"/>')))
+        r.append(drawCell($('<div class="V' + i + '" style="font-family:serif"/>')))
+        r.append(drawCell(drawArrowCross(g_m.rotate.axes[0] == i, g_m.rotate.axes[1] == i, function (horz, vert) {
+            beginModelChange()
+            if (horz) g_m.rotate.axes[0] = i
+            if (vert) g_m.rotate.axes[1] = i
+            g_m.rotate.rotateZ = false
+            endModelChange()
+        })))
+        return r
+    }
+    function drawHeader() {
+        var r = $('<tr height="' + g_rowHeight + 'px" style="background: linear-gradient(to bottom, white, lightgrey);"/>')
+        r.append(drawCell($('<div style="font-size:small"/>').text('Rotation')))
+        r.append(drawCell('H'))
+        r.append(drawCell('V'))
+        r.append(drawCell(drawRotate(g_m.rotate.rotateZ, function () {
+            beginModelChange()
+            g_m.rotate.rotateZ = !g_m.rotate.rotateZ
+            endModelChange()
+        })))
+        return r
+    }
+    function updateHV() {
+        for (var i = 0; i < g_m.rotate.H.length; i++) {
+            d.find('.H' + i).text(g_m.rotate.H[i].toFixed(2))
+            d.find('.V' + i).text(g_m.rotate.V[i].toFixed(2))
+        }
+    }
+
+    var d = $('<div style="margin:5px"/>')
+    function update() {
+        var t = $('<table width="180px;height:324px"/>')
+        t.append(drawHeader())
+
+        var rows = [
+            'ω<sub>S</sub>',
+            'iω<sub>T</sub>',
+            m.c(m.sqrt(m.x(2)), m.i('W')),
+            m.c(m.f(m.sqrt(m.x(3)), m.sqrt(m.x(10))), m.i('Y')),
+            'iw',
+            m.c(m.f(m.x(1), m.sqrt(m.x(5))), m.i('X')),
+            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(3), null)),
+            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(8), null))
+        ]
+        rows = _.map(rows, function (r) {
+            return typeof(r) == 'string' ? $('<i style="font-family:serif"/>').html(r) : r
+        })
+        _.each(rows, function (r, i) {
+            t.append(drawRow(r, i).css('background', i % 2 == 0 ? 'white' : '#f0f0f0'))
+        })
+        d.empty().append(t)
+        updateHV()
+    }
+    update()
+    d.addClass('onModelChange')[0].onModelChange = function () {
+        var diff = false
+        for (var i = 0; i < g_m.rotate.H.length; i++) {
+            if (g_m.rotate.H[i] != g_old_m.rotate.H[i]) {
+                diff = true
+                break
+            }
+            if (g_m.rotate.V[i] != g_old_m.rotate.V[i]) {
+                diff = true
+                break
+            }
+        }
+        if (diff) updateHV()
+        if (isModelDifferent('rotate.axes[0]', 'rotate.axes[1]', 'rotate.rotateZ')) {
+            update()
+        }
+    }
+    return d
+}
+
 function updateMain() {
     w = $('body')[0].clientWidth
     h = $('body')[0].clientHeight
-    size = Math.min(w, h - 180)
+    var bottomHeight = g_rowHeight * 5 + 10
+    var sideWidth = 190
+    size = Math.min(w - sideWidth, h - bottomHeight)
 
     var d = $('<div/>').width(w).height(h)
-    d.append(_.splitVert(1, 180, drawVisualization(size, size), drawInteractions()))
+    d.append(_.splitVert(1, bottomHeight, _.splitHorz(sideWidth, 1, drawRotationPanel(), drawVisualization(size, size)), drawInteractions()))
     $('body').empty().append(d)
 }
 
@@ -466,7 +769,11 @@ $(function () {
         showTriality : true,
         rotate : {
             x : 0,
-            y : 0
+            y : 0,
+            H : [0, 0.67, -0.66, 0, -0.1, 0, 0.34, 0],
+            V : [0.92, 0, 0, 0.09, 0, 0.38, 0, 0.02],
+            axes : [0, 1],
+            rotateZ : false
         },
         interactions : {
             over : null,
