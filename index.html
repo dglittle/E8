@@ -371,7 +371,7 @@ function drawVisualization(w, h) {
         } else {
             var radiansPerPixel = tau / 1000
             var ax = dx * radiansPerPixel
-            var ay = dy * radiansPerPixel
+            var ay = -dy * radiansPerPixel
 
             var a = zeros(8)
             a[g_m.rotate.axes[0]] = 1
