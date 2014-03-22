@@ -59,22 +59,85 @@ var m = {
     }
 }
 
-var g_axis_labels = [
-    m.c(m.i('ω'), m.supsub(null, m.i('S'))),
-    m.c(m.i('iω'), m.supsub(null, m.i('T'))),
-    m.i('W'),
-    m.i('Y'),
-    m.i('iw'),
-    m.i('X'),
-    m.c(m.i('g'), m.supsub(m.x(3), null)),
-    m.c(m.i('g'), m.supsub(m.x(8), null))
-]
-var g_axis_label_sizes = []
+var g_coordinateSystems = {
+    'sm' : {
+        name : 'Physics Coordinates',
+        longLabels : [
+            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
+            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
+            m.c(m.sqrt(m.x(2)), m.i('W')),
+            m.c(m.f(m.sqrt(m.x(3)), m.sqrt(m.x(10))), m.i('Y')),
+            m.i('iw'),
+            m.c(m.f(m.x(1), m.sqrt(m.x(5))), m.i('X')),
+            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(3), null)),
+            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(8), null))
+        ],
+        shortLabels : [
+            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
+            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
+            m.i('W'),
+            m.i('Y'),
+            m.i('iw'),
+            m.i('X'),
+            m.c(m.i('g'), m.supsub(m.x(3), null)),
+            m.c(m.i('g'), m.supsub(m.x(8), null))
+        ]
+    },
+    'gut' : {
+        name : 'GUT Coordinates',
+        longLabels : [
+            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
+            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
+            m.c(m.sqrt(m.x(2)), m.i('W')),
+            m.c(m.sqrt(m.x(2)), m.i("W'")),
+            m.i('iw'),
+            m.c(m.f(m.sqrt(m.x(3)), m.x(2)), m.i('B')),
+            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(3), null)),
+            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(8), null))
+        ],
+        shortLabels : [
+            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
+            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
+            m.i('W'),
+            m.i("W'"),
+            m.i('iw'),
+            m.i('B'),
+            m.c(m.i('g'), m.supsub(m.x(3), null)),
+            m.c(m.i('g'), m.supsub(m.x(8), null))
+        ]
+    },
+    'e8' : {
+        name : 'Math Coordinates',
+        longLabels : [
+            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
+            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
+            m.i('U'),
+            m.i('V'),
+            m.i('iw'),
+            m.i('x'),
+            m.i('y'),
+            m.i('z')
+        ],
+        shortLabels : [
+            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
+            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
+            m.i('U'),
+            m.i('V'),
+            m.i('iw'),
+            m.i('x'),
+            m.i('y'),
+            m.i('z')
+        ]
+    }
+}
 $(function () {
-    _.each(g_axis_labels, function (la) {
-        $('body').append(la)
-        g_axis_label_sizes.push([la.width(), la.height()])
-        la.detach()
+    _.each(g_coordinateSystems, function (cs) {
+        cs.shortLabelSizes = []
+        _.each(cs.shortLabels, function (la) {
+            $('body').append(la)
+            cs.shortLabelSizes.push([la.width(), la.height()])
+            la.detach()
+        })
     })
 })
 
@@ -206,13 +269,14 @@ function drawVisualization(w, h) {
         }
         function projectParticle(id) {
             var p = particles[id - 1]
-            return project(p.e8coord)
+            return project(p[g_m.coordinateSystem + 'coord'])
         }
 
         var scale = 0.1
 
         if (!p2p) {
             if (g_m.showAxes) {
+                var cs = g_coordinateSystems[g_m.coordinateSystem]
                 g.lineWidth = unitWidth
                 g.strokeStyle = 'black'
                 var dPos = d.offset()
@@ -234,8 +298,8 @@ function drawVisualization(w, h) {
                     v = transformPoint(v, w/3, 0, 0, -h/3, w/2, h/2)
                     v = add(v, dPos)
 
-                    var label = g_axis_labels[i].clone()
-                    v = sub(v, mul(.5, g_axis_label_sizes[i]))
+                    var label = cs.shortLabels[i].clone()
+                    v = sub(v, mul(.5, cs.shortLabelSizes[i]))
                     d.append($('<div style="position:absolute;z-index:-1;left:' + v[0] + 'px;top:' + v[1] + 'px"/>').append(label))
                 }
             }
@@ -273,7 +337,7 @@ function drawVisualization(w, h) {
                 g.fill()
             }
 
-            if (g_m.showTriality) {
+            if (g_m.showTriality && g_m.theory == 'e8') {
                 _.each(trialities, function (t) {
                     var locs = _.map(t, projectParticle)
                     g.beginPath()
@@ -291,7 +355,8 @@ function drawVisualization(w, h) {
         var noInteractionHighlight = _.makeSet(g_m.interactions.interaction || [])
 
         _.each(particles, function (p) {
-            var pos = p.e8coord
+            if (!p[g_m.theory]) return
+            var pos = p[g_m.coordinateSystem + 'coord']
             var x = dot(H, pos)
             var y = dot(V, pos)
             if (!p2p) {
@@ -448,7 +513,6 @@ function drawVisualization(w, h) {
     })
 
     d.addClass('onModelChange')[0].onModelChange = function () {
-
         var diff = false
         for (var i = 0; i < g_m.rotate.H.length; i++) {
             if (g_m.rotate.H[i] != g_old_m.rotate.H[i]) {
@@ -460,7 +524,7 @@ function drawVisualization(w, h) {
                 break
             }
         }
-        if (diff || isModelDifferent('showAxes', 'showTriality', 'interactions.over', 'interactions.selection1', 'interactions.selection2', 'interactions.result')) {
+        if (diff || isModelDifferent('theory', 'coordinateSystem', 'showAxes', 'showTriality', 'interactions.over', 'interactions.selection1', 'interactions.selection2', 'interactions.result')) {
             update()
         }
     }
@@ -555,7 +619,7 @@ function drawInteractions() {
         renderParticle(g, -0.3, -0.3, 1, 1/size, { symbol : 'sdia', color : 'mgree' })
         r.append(drawCell(c))
 
-        _.each(g_axis_labels, function (a) {
+        _.each(g_coordinateSystems[g_m.coordinateSystem].shortLabels, function (a) {
             r.append(drawCell(a))
         })
         return r
@@ -565,13 +629,13 @@ function drawInteractions() {
     function update() {
         var t = $('<table style="width:800px;margin:5px"/>')
         t.append(drawHeader())
-        t.append(drawParticles('gut'))
+        t.append(drawParticles(g_m.coordinateSystem))
         d.empty().append(t)
     }
     update()
 
     d.addClass('onModelChange')[0].onModelChange = function () {
-        if (isModelDifferent('showAxes', 'showTriality', 'interactions.over', 'interactions.selection1', 'interactions.selection2', 'interactions.result')) {
+        if (isModelDifferent('coordinateSystem', 'showAxes', 'showTriality', 'interactions.over', 'interactions.selection1', 'interactions.selection2', 'interactions.result')) {
             update()
         }
     }
@@ -749,21 +813,8 @@ function drawRotationPanel() {
         var t = $('<table width="180px;height:324px"/>')
         t.append(drawHeader())
 
-        var rows = [
-            'ω<sub>S</sub>',
-            'iω<sub>T</sub>',
-            m.c(m.sqrt(m.x(2)), m.i('W')),
-            m.c(m.f(m.sqrt(m.x(3)), m.sqrt(m.x(10))), m.i('Y')),
-            'iw',
-            m.c(m.f(m.x(1), m.sqrt(m.x(5))), m.i('X')),
-            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(3), null)),
-            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(8), null))
-        ]
-        rows = _.map(rows, function (r) {
-            return typeof(r) == 'string' ? $('<i style="font-family:serif"/>').html(r) : r
-        })
-        _.each(rows, function (r, i) {
-            t.append(drawRow(r, i).css('background', i % 2 == 0 ? 'white' : '#f0f0f0'))
+        _.each(g_coordinateSystems[g_m.coordinateSystem].longLabels, function (label, i) {
+            t.append(drawRow(label, i).css('background', i % 2 == 0 ? 'white' : '#f0f0f0'))
         })
         d.empty().append(t)
         updateHV()
@@ -782,7 +833,76 @@ function drawRotationPanel() {
             }
         }
         if (diff) updateHV()
-        if (isModelDifferent('rotate.axes[0]', 'rotate.axes[1]', 'rotate.rotateZ')) {
+        if (isModelDifferent('coordinateSystem', 'rotate.axes[0]', 'rotate.axes[1]', 'rotate.rotateZ')) {
+            update()
+        }
+    }
+    return d
+}
+
+function drawTheoryPanel() {
+    var d = $('<div style="margin:5px"/>')
+    function update() {
+        var dd = $('<div width="180px"/>')
+
+        function createSelect(options, select, cb) {
+            var s = $('<select style="font-size:x-small;width:100%"/>')
+            _.each(options, function (name, key) {
+                o = $('<option/>').text(name)
+                o[0].value = key
+                if (key === select)
+                    o.attr('selected', 'selected')
+                s.append(o)
+            })
+            s.on('change', function () {
+                if (cb) cb(s.find(":selected")[0].value)
+            })
+            return s
+        }
+
+        var theories = {
+            'sm' : 'Standard Model',
+            'gg' : 'Georgi-Glashow SU(5)',
+            'ps' : 'Pati-Salam',
+            'e6' : 'E6 / SO(10)',
+            'e8' : 'E8'
+        }
+        var theorySelect = createSelect(theories, g_m.theory, function (newTheory) {
+            beginModelChange()
+            g_m.theory = newTheory
+            endModelChange()
+        })
+        dd.append(_.splitHorz(2, 1, $('<div style="font-size:small;padding-right:10px"/>').text('Theory'), theorySelect).css('margin-bottom', '10px'))
+
+        var savedRotations = createSelect(_.map(g_savedRotations, function (r) { return r.name }), null, function (i) {
+            var r = g_savedRotations[i]
+            beginModelChange()
+            g_m.rotate.H = r.H
+            g_m.rotate.V = r.V
+            // g_m.rotate.axes = r.axes
+            g_m.coordinateSystem = r.coordinateSystem
+            endModelChange()
+
+        }).css('height', '85px').attr('multiple', 'multiple')
+        dd.append(_.splitHorz(.5, .5, $('<div style="font-size:small"/>').text('Saved Rotations').append($('<button style="font-size:x-small;width:50px"/>').text('Save').click(function () {
+            alert('work here : make this save current rotation')
+        })).append($('<br/>')).append($('<button style="width:50px;font-size:x-small"/>').text('Delete').click(function () {
+            alert('work here : make this delete currently selected rotation')
+        })), savedRotations).css('margin-bottom', '10px'))
+
+        var coordinateSelect = createSelect(_.map(g_coordinateSystems, function (cs) { return cs.name }), g_m.coordinateSystem, function (cs) {
+            beginModelChange()
+            g_m.coordinateSystem = cs
+            endModelChange()
+        }).css('margin-bottom', '10px')
+
+        dd.append(coordinateSelect)
+
+        d.empty().append(dd)
+    }
+    update()
+    d.addClass('onModelChange')[0].onModelChange = function () {
+        if (isModelDifferent('theory', 'coordinateSystem')) {
             update()
         }
     }
@@ -797,7 +917,7 @@ function updateMain() {
     size = Math.min(w - sideWidth, h - bottomHeight)
 
     var d = $('<div/>').width(w).height(h)
-    d.append(_.splitVert(1, bottomHeight, _.splitHorz(sideWidth, 1, drawRotationPanel(), drawVisualization(size, size)), drawInteractions()))
+    d.append(_.splitVert(1, bottomHeight, _.splitHorz(sideWidth, 1, $('<div/>').append(drawTheoryPanel()).append(drawRotationPanel()), drawVisualization(size, size)), drawInteractions()))
     $('body').empty().append(d)
 }
 
@@ -821,11 +941,11 @@ function isModelDifferent() {
 
 $(function () {
     g_m = {
+        theory : 'e8',
+        coordinateSystem : 'sm',
         showAxes : true,
         showTriality : true,
         rotate : {
-            x : 0,
-            y : 0,
             H : [0, 0.67, -0.66, 0, -0.1, 0, 0.34, 0],
             V : [0.92, 0, 0, 0.09, 0, 0.38, 0, 0.02],
             axes : [0, 1],
@@ -840,6 +960,7 @@ $(function () {
         }
     }
     g_selection1_interactions = {}
+    g_savedRotations = defaultSavedRotations
 
     $(window).resize(updateMain)
     updateMain()
