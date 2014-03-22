@@ -59,6 +59,17 @@ var m = {
     }
 }
 
+var g_axis_labels = [
+    m.c(m.i('ω'), m.supsub(null, m.i('S'))),
+    m.c(m.i('iω'), m.supsub(null, m.i('T'))),
+    m.i('W'),
+    m.i('Y'),
+    m.i('iw'),
+    m.i('X'),
+    m.c(m.i('g'), m.supsub(m.x(3), null)),
+    m.c(m.i('g'), m.supsub(m.x(8), null))
+]
+
 function p2p_id_to_color(id) {
     var low = id % 16
     var high = Math.floor(id / 16)
@@ -166,6 +177,13 @@ function drawVisualization(w, h) {
         pixelToParticleMap = g.getImageData(0, 0, w, h).data
     }
 
+    function transformPoint(p, _0, _1, _2, _3, _4, _5) {
+        return [
+            p[0] * _0 + p[1] * _2 + _4,
+            p[0] * _1 + p[1] * _3 + _5
+        ]
+    }    
+
     function draw(p2p) {
         var c = $('<canvas/>').attr('width', w).attr('height', h)
         var g = c[0].getContext('2d')
@@ -175,58 +193,90 @@ function drawVisualization(w, h) {
         var H = g_m.rotate.H
         var V = g_m.rotate.V
 
+        function project(x) {
+            return [dot(H, x), dot(V, x)]
+        }
         function projectParticle(id) {
             var p = particles[id - 1]
-            return [dot(H, p.e8coord), dot(V, p.e8coord)]
+            return project(p.e8coord)
         }
 
         var scale = 0.1
 
-        if (!p2p && g_m.interactions.interaction) {
-            var x = _.map(g_m.interactions.interaction, projectParticle)
-
-            g.beginPath()
-            g.moveTo(x[0][0], x[0][1])
-            g.lineTo(x[1][0], x[1][1])
-            g.lineWidth = unitWidth * 7
-            g.strokeStyle = 'yellow'
-            g.stroke()
-
-            g.beginPath()
-            g.arc(x[0][0], x[0][1], scale, 0, tau)
-            g.fillStyle = 'yellow'
-            g.fill()
-
-            g.beginPath()
-            g.arc(x[1][0], x[1][1], scale, 0, tau)
-            g.fillStyle = 'yellow'
-            g.fill()
-
-            g.beginPath()
-            g.moveTo(0, 0)
-            g.lineTo(x[2][0], x[2][1])
-            g.lineWidth = unitWidth * 7
-            g.strokeStyle = 'lightgreen'
-            g.stroke()
-
-            g.beginPath()
-            g.arc(x[2][0], x[2][1], scale, 0, tau)
-            g.fillStyle = 'lightgreen'
-            g.fill()
-        }
-
-        if (g_m.showTriality && !p2p) {
-            _.each(trialities, function (t) {
-                var locs = _.map(t, projectParticle)
-                g.beginPath()
-                g.moveTo(locs[2][0], locs[2][1])
-                for (var i = 0; i < 3; i++) {
-                    g.lineTo(locs[i][0], locs[i][1])
-                }
+        if (!p2p) {
+            if (g_m.showAxes) {
+                g.lineWidth = unitWidth
                 g.strokeStyle = 'black'
-                g.lineWidth = unitWidth / 3
+                var dPos = d.offset()
+                dPos = [dPos.left, dPos.top]
+                for (var i = 0; i < 8; i++) {
+                    var v = zeros(8)
+                    v[i] = 1.1
+                    v = project(v)
+
+                    g.beginPath()
+                    g.moveTo(0, 0)
+                    g.lineTo(v[0], v[1])
+                    g.stroke()
+
+                    var v = zeros(8)
+                    v[i] = 1.2
+                    v = project(v)
+                    v = transformPoint(v, w/3, 0, 0, -h/3, w/2, h/2)
+                    v = add(v, dPos)
+                    v = sub(v, [10, 20])
+
+                    var label = g_axis_labels[i].clone()
+                    d.append($('<div style="position:absolute;z-index:-1;left:' + v[0] + 'px;top:' + v[1] + 'px"/>').append(label))
+                }
+            }
+
+            if (g_m.interactions.interaction) {
+                var x = _.map(g_m.interactions.interaction, projectParticle)
+
+                g.beginPath()
+                g.moveTo(x[0][0], x[0][1])
+                g.lineTo(x[1][0], x[1][1])
+                g.lineWidth = unitWidth * 7
+                g.strokeStyle = 'yellow'
                 g.stroke()
-            })
+
+                g.beginPath()
+                g.arc(x[0][0], x[0][1], scale, 0, tau)
+                g.fillStyle = 'yellow'
+                g.fill()
+
+                g.beginPath()
+                g.arc(x[1][0], x[1][1], scale, 0, tau)
+                g.fillStyle = 'yellow'
+                g.fill()
+
+                g.beginPath()
+                g.moveTo(0, 0)
+                g.lineTo(x[2][0], x[2][1])
+                g.lineWidth = unitWidth * 7
+                g.strokeStyle = 'lightgreen'
+                g.stroke()
+
+                g.beginPath()
+                g.arc(x[2][0], x[2][1], scale, 0, tau)
+                g.fillStyle = 'lightgreen'
+                g.fill()
+            }
+
+            if (g_m.showTriality) {
+                _.each(trialities, function (t) {
+                    var locs = _.map(t, projectParticle)
+                    g.beginPath()
+                    g.moveTo(locs[2][0], locs[2][1])
+                    for (var i = 0; i < 3; i++) {
+                        g.lineTo(locs[i][0], locs[i][1])
+                    }
+                    g.strokeStyle = 'black'
+                    g.lineWidth = unitWidth / 3
+                    g.stroke()
+                })
+            }
         }
 
         var noInteractionHighlight = _.makeSet(g_m.interactions.interaction || [])
@@ -430,7 +480,6 @@ function drawInteractions() {
         renderParticle(g, 0, 0, 1, 1/size, p)
         r.append(drawCell(c))
 
-
         function drawNumber(a) {
             function formatNumber(a) {
                 a = a.replace(/SQRT\((.*?)\)/g, function (_0, _1) {
@@ -461,7 +510,9 @@ function drawInteractions() {
                 p = particles[1*p - 1]
                 addParticle(r, p, theory)
             } else {
-                r.append(drawCell($('<div/>'), 13))
+                r.append(drawCell($('<div/>'), 3))
+                for (var i = 0; i < 10; i++)
+                    r.append(drawCell($('<div/>'), 1))
             }
             return r
         })
@@ -495,19 +546,8 @@ function drawInteractions() {
         renderParticle(g, -0.3, -0.3, 1, 1/size, { symbol : 'sdia', color : 'mgree' })
         r.append(drawCell(c))
 
-        var headers = [
-            'ω<sub>S</sub>',
-            'iω<sub>T</sub>',
-            'W',
-            'Y',
-            'iw',
-            'X',
-            m.c(m.i('g'), m.supsub(m.x(3), null)),
-            m.c(m.i('g'), m.supsub(m.x(8), null))
-        ]
-        _.each(headers, function (h) {
-            if (typeof(h) == 'string') h = $('<i style="font-family:serif"/>').html(h)
-            r.append(drawCell(h))
+        _.each(g_axis_labels, function (a) {
+            r.append(drawCell(a))
         })
         return r
     }
