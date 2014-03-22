@@ -69,6 +69,14 @@ var g_axis_labels = [
     m.c(m.i('g'), m.supsub(m.x(3), null)),
     m.c(m.i('g'), m.supsub(m.x(8), null))
 ]
+var g_axis_label_sizes = []
+$(function () {
+    _.each(g_axis_labels, function (la) {
+        $('body').append(la)
+        g_axis_label_sizes.push([la.width(), la.height()])
+        la.detach()
+    })
+})
 
 function p2p_id_to_color(id) {
     var low = id % 16
@@ -211,22 +219,23 @@ function drawVisualization(w, h) {
                 dPos = [dPos.left, dPos.top]
                 for (var i = 0; i < 8; i++) {
                     var v = zeros(8)
-                    v[i] = 1.1
-                    v = project(v)
+                    v[i] = 1
+                    v1 = project(v)
+                    v[i] *= -1
+                    v2 = project(v)
 
                     g.beginPath()
-                    g.moveTo(0, 0)
-                    g.lineTo(v[0], v[1])
+                    g.moveTo(v1[0], v1[1])
+                    g.lineTo(v2[0], v2[1])
                     g.stroke()
 
-                    var v = zeros(8)
-                    v[i] = 1.2
+                    v[i] = 1.1
                     v = project(v)
                     v = transformPoint(v, w/3, 0, 0, -h/3, w/2, h/2)
                     v = add(v, dPos)
-                    v = sub(v, [10, 20])
 
                     var label = g_axis_labels[i].clone()
+                    v = sub(v, mul(.5, g_axis_label_sizes[i]))
                     d.append($('<div style="position:absolute;z-index:-1;left:' + v[0] + 'px;top:' + v[1] + 'px"/>').append(label))
                 }
             }
