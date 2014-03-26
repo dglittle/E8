@@ -141,6 +141,141 @@ $(function () {
     })
 })
 
+var g_coordinateSystemsConversions = {
+    'e8->sm' : function (H, V) {
+        var H1 = []
+        var V1 = []
+        H1[0] = H[0]
+        H1[1] = H[1]
+        H1[2] = -0.7071 * H[2] + 0.7071 * H[3]
+        H1[3] = 0.5477 * H[2] + 0.5477 * H[3] + 0.3651 * H[5] + 0.3651 * H[6] + 0.3651 * H[7]
+        H1[4] = H[4]
+        H1[5] = -0.4472 * H[2] - 0.4472 * H[3] + 0.4472 * H[5] + 0.4472 * H[6] + 0.4472 * H[7]
+        H1[6] = -0.7071 * H[5] + 0.7071 * H[6]
+        H1[7] = -0.4082 * H[5] - 0.4082 * H[6] + 0.8165 * H[7]
+
+        V1[0] = V[0]
+        V1[1] = V[1]
+        V1[2] = -0.7071 * V[2] + 0.7071 * V[3]
+        V1[3] = 0.5477 * V[2] + 0.5477 * V[3] + 0.3651 * V[5] + 0.3651 * V[6] + 0.3651 * V[7]
+        V1[4] = V[4]
+        V1[5] = -0.4472 * V[2] - 0.4472 * V[3] + 0.4472 * V[5] + 0.4472 * V[6] + 0.4472 * V[7]
+        V1[6] = -0.7071 * V[5] + 0.7071 * V[6]
+        V1[7] = -0.4082 * V[5] - 0.4082 * V[6] + 0.8165 * V[7]
+        return [H1, V1]
+    },
+    'sm->e8' : function (H, V) {
+        var H1 = []
+        var V1 = []
+        H1[0] = H[0]
+        H1[1] = H[1]
+        H1[2] = -0.7071 * H[2] + 0.5477 * H[3] - 0.4472 * H[5]
+        H1[3] = 0.7071 * H[2] + 0.5477 * H[3] - 0.4472 * H[5]
+        H1[4] = H[4]
+        H1[5] = 0.3651 * H[3] + 0.4472 * H[5] - 0.7071 * H[6] - 0.4082 * H[7]
+        H1[6] = 0.3651 * H[3] + 0.4472 * H[5] + 0.7071 * H[6] - 0.4082 * H[7]
+        H1[7] = 0.3651 * H[3] + 0.4472 * H[5] + 0.8165 * H[7]
+
+        V1[0] = V[0]
+        V1[1] = V[1]
+        V1[2] = -0.7071 * V[2] + 0.5477 * V[3] - 0.4472 * V[5]
+        V1[3] = 0.7071 * V[2] + 0.5477 * V[3] - 0.4472 * V[5]
+        V1[4] = V[4]
+        V1[5] = 0.3651 * V[3] + 0.4472 * V[5] - 0.7071 * V[6] - 0.4082 * V[7]
+        V1[6] = 0.3651 * V[3] + 0.4472 * V[5] + 0.7071 * V[6] - 0.4082 * V[7]
+        V1[7] = 0.3651 * V[3] + 0.4472 * V[5] + 0.8165 * V[7]
+        return [H1, V1] 
+    },
+    'e8->gut' : function (H, V) {
+        var H1 = []
+        var V1 = []
+        H1[0] = H[0]
+        H1[1] = H[1]
+        H1[2] = -0.7071 * H[2] + 0.7071 * H[3]
+        H1[3] = 0.7071 * H[2] + 0.7071 * H[3]
+        H1[4] = H[4]
+        H1[5] = 0.5774 * H[5] + 0.5774 * H[6] + 0.5774 * H[7]
+        H1[6] = -0.7071 * H[5] + 0.7071 * H[6]
+        H1[7] = -0.4082 * H[5] - 0.4082 * H[6] + 0.8165 * H[7]
+
+        V1[0] = V[0]
+        V1[1] = V[1]
+        V1[2] = -0.7071 * V[2] + 0.7071 * V[3]
+        V1[3] = 0.7071 * V[2] + 0.7071 * V[3]
+        V1[4] = V[4]
+        V1[5] = 0.5774 * V[5] + 0.5774 * V[6] + 0.5774 * V[7]
+        V1[6] = -0.7071 * V[5] + 0.7071 * V[6]
+        V1[7] = -0.4082 * V[5] - 0.4082 * V[6] + 0.8165 * V[7]
+        return [H1, V1]
+    },
+    'gut->e8' : function (H, V) {
+        var H1 = []
+        var V1 = []
+        H1[0] = H[0]
+        H1[1] = H[1]
+        H1[2] = -0.7071 * H[2] + 0.7071 * H[3]
+        H1[3] = 0.7071 * H[2] + 0.7071 * H[3]
+        H1[4] = H[4]
+        H1[5] = 0.5774 * H[5] - 0.7071 * H[6] - 0.4082 * H[7]
+        H1[6] = 0.5774 * H[5] + 0.7071 * H[6] - 0.4082 * H[7]
+        H1[7] = 0.5774 * H[5] + 0.8165 * H[7]
+
+        V1[0] = V[0]
+        V1[1] = V[1]
+        V1[2] = -0.7071 * V[2] + 0.7071 * V[3]
+        V1[3] = 0.7071 * V[2] + 0.7071 * V[3]
+        V1[4] = V[4]
+        V1[5] = 0.5774 * V[5] - 0.7071 * V[6] - 0.4082 * V[7]
+        V1[6] = 0.5774 * V[5] + 0.7071 * V[6] - 0.4082 * V[7]
+        V1[7] = 0.5774 * V[5] + 0.8165 * V[7]
+        return [H1, V1]
+    },
+    'gut->sm' : function (H, V) {
+        var H1 = []
+        var V1 = []
+        H1[0] = H[0]
+        H1[1] = H[1]
+        H1[2] = H[2]
+        H1[3] = 0.7746 * H[3] + 0.6325 * H[5]
+        H1[4] = H[4]
+        H1[5] = -0.6325 * H[3] + 0.7746 * H[5]
+        H1[6] = H[6]
+        H1[7] = H[7]
+
+        V1[0] = V[0]
+        V1[1] = V[1]
+        V1[2] = V[2]
+        V1[3] = 0.7746 * V[3] + 0.6325 * V[5]
+        V1[4] = V[4]
+        V1[5] = -0.6325 * V[3] + 0.7746 * V[5]
+        V1[6] = V[6]
+        V1[7] = V[7]
+        return [H1, V1]
+    },
+    'sm->gut' : function (H, V) {
+        var H1 = []
+        var V1 = []
+        H1[0] = H[0]
+        H1[1] = H[1]
+        H1[2] = H[2]
+        H1[3] = 0.7746 * H[3] - 0.6325 * H[5]
+        H1[4] = H[4]
+        H1[5] = 0.6325 * H[3] + 0.7746 * H[5]
+        H1[6] = H[6]
+        H1[7] = H[7]
+
+        V1[0] = V[0]
+        V1[1] = V[1]
+        V1[2] = V[2]
+        V1[3] = 0.7746 * V[3] - 0.6325 * V[5]
+        V1[4] = V[4]
+        V1[5] = 0.6325 * V[3] + 0.7746 * V[5]
+        V1[6] = V[6]
+        V1[7] = V[7]
+        return [H1, V1]
+    }
+}
+
 function p2p_id_to_color(id) {
     var low = id % 16
     var high = Math.floor(id / 16)
@@ -499,9 +634,8 @@ function drawVisualization(w, h) {
 
     function getOverParticle(e) {
         if (pixelToParticleMap) {
-            var pos = getRelPos(d, e)
+            var pos = _.map(getRelPos(d, e), Math.round)
             var base = pos[0]*4 + pos[1]*4*w
-
             return p2p_color_to_id(pixelToParticleMap[base], pixelToParticleMap[base+1], pixelToParticleMap[base+2], pixelToParticleMap[base+3])
         }
     }
@@ -874,24 +1008,53 @@ function drawTheoryPanel() {
         })
         dd.append(_.splitHorz(2, 1, $('<div style="font-size:small;padding-right:10px"/>').text('Theory'), theorySelect).css('margin-bottom', '10px'))
 
-        var savedRotations = createSelect(_.map(g_savedRotations, function (r) { return r.name }), null, function (i) {
-            var r = g_savedRotations[i]
+        var savedRotations = createSelect(_.map(g_db.savedRotations, function (r) { return r.name }), null, function (i) {
+            var r = g_db.savedRotations[i]
             beginModelChange()
-            g_m.rotate.H = r.H
-            g_m.rotate.V = r.V
+
+            if (r.coordinateSystem != g_m.coordinateSystem) {
+                var newHV = g_coordinateSystemsConversions[r.coordinateSystem + '->' + g_m.coordinateSystem](r.H, r.V)
+                g_m.rotate.H = newHV[0]
+                g_m.rotate.V = newHV[1]
+            } else {
+                g_m.rotate.H = r.H
+                g_m.rotate.V = r.V
+            }
             // g_m.rotate.axes = r.axes
-            g_m.coordinateSystem = r.coordinateSystem
+            // g_m.coordinateSystem = r.coordinateSystem
+
             endModelChange()
 
-        }).css('height', '85px').attr('multiple', 'multiple')
-        dd.append(_.splitHorz(.5, .5, $('<div style="font-size:small"/>').text('Saved Rotations').append($('<button style="font-size:x-small;width:50px"/>').text('Save').click(function () {
-            alert('work here : make this save current rotation')
-        })).append($('<br/>')).append($('<button style="width:50px;font-size:x-small"/>').text('Delete').click(function () {
-            alert('work here : make this delete currently selected rotation')
+        }).css('height', '90px').attr('multiple', 'multiple')
+        dd.append(_.splitHorz(.5, .5, $('<div style="font-size:small"/>').text('Saved Rotations').append($('<button style="font-size:x-small;width:60px;margin-top:5px;"/>').text('Save').click(function () {
+            var name = prompt('Please enter a name for your rotation')
+            if (name) {
+                g_db.savedRotations.push({
+                    name : name,
+                    H : g_m.rotate.H.slice(0),
+                    V : g_m.rotate.V.slice(0),
+                    axes : g_m.rotate.axes.slice(0),
+                    coordinateSystem : g_m.coordinateSystem
+                })
+                saveDb()
+                updateMain()
+            }
+        })).append($('<br/>')).append($('<button style="width:60px;font-size:x-small;margin-top:5px"/>').text('Delete').click(function () {
+            var sel = _.map(savedRotations.find(':selected').get(), function (o) { return 1 * o.value })
+            if (confirm('Are you sure you want to delete the following rotation' + (sel.length == 1 ? '' : 's') + '?: ' + _.map(sel, function (i) { return g_db.savedRotations[i].name }).join(', '))) {
+                _.each(_.sort(sel).reverse(), function (i) {
+                    g_db.savedRotations.splice(i, 1)
+                })
+                saveDb()
+                updateMain()
+            }
         })), savedRotations).css('margin-bottom', '10px'))
 
         var coordinateSelect = createSelect(_.map(g_coordinateSystems, function (cs) { return cs.name }), g_m.coordinateSystem, function (cs) {
             beginModelChange()
+            var newHV = g_coordinateSystemsConversions[g_m.coordinateSystem + '->' + cs](g_m.rotate.H, g_m.rotate.V)
+            g_m.rotate.H = newHV[0]
+            g_m.rotate.V = newHV[1]
             g_m.coordinateSystem = cs
             endModelChange()
         }).css('margin-bottom', '10px')
@@ -920,6 +1083,14 @@ function updateMain() {
     d.append(_.splitVert(1, bottomHeight, _.splitHorz(sideWidth, 1, $('<div/>').append(drawTheoryPanel()).append(drawRotationPanel()), drawVisualization(size, size)), drawInteractions()))
     $('body').empty().append(d)
 }
+
+function loadDb() {
+    g_db = localStorage.E8 ? _.unJson(localStorage.E8) : {}
+}
+function  saveDb() {
+    localStorage.E8 = _.json(g_db)
+}
+$(function () { loadDb() })
 
 var g_m = null
 var g_old_m = null
@@ -960,7 +1131,7 @@ $(function () {
         }
     }
     g_selection1_interactions = {}
-    g_savedRotations = defaultSavedRotations
+    if (!g_db.savedRotations) g_db.savedRotations = defaultSavedRotations
 
     $(window).resize(updateMain)
     updateMain()
