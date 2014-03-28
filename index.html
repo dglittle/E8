@@ -23,110 +23,79 @@ th, td {
 <script src="http://dglittle.github.io/gl519/index.js"></script>
 <script src="utils.js"></script>
 <script src="particles.js"></script>
+<script src="symbols.js"></script>
 <script>
 
 var g_rowHeight = 34
-
-// math formatting
-var m = {
-    x : function (x) {
-        return $('<span style="font-family:serif"/>').text(x)
-    },
-    i : function (x) {
-        return $('<i style="font-family:serif"/>').text(x)
-    },
-    f : function (a, b) {
-        return $('<table/>').append(
-            $('<tr style="border-bottom:1px solid black"/>').append($('<td align="middle"/>').append(a.css('font-size', 'small')))
-        ).append(
-            $('<tr/>').append($('<td align="middle"/>').append(b.css('font-size', 'small')))
-        )
-    },
-    supsub : function (a, b) {
-        if (!a) a = $('<span>&nbsp;</span>')
-        if (!b) b = $('<span>&nbsp;</span>')
-        return $('<table/>').append(
-            $('<tr/>').append($('<td/>').append(a.css('font-size', 'small')))
-        ).append(
-            $('<tr/>').append($('<td/>').append(b.css('font-size', 'small')))
-        )
-    },
-    c : function (a, b) {
-        return $('<table/>').append($('<tr/>').append($('<td/>').append(a)).append($('<td/>').append(b)))
-    },
-    sqrt : function (x) {
-        return m.c($('<span style="font-size:90%">&radic;</span>'), $('<div style="border-top:1px solid black"/>').append(x))
-    }
-}
 
 var g_coordinateSystems = {
     'sm' : {
         name : 'Physics Coordinates',
         longLabels : [
-            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
-            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
-            m.c(m.sqrt(m.x(2)), m.i('W')),
-            m.c(m.f(m.sqrt(m.x(3)), m.sqrt(m.x(10))), m.i('Y')),
-            m.i('iw'),
-            m.c(m.f(m.x(1), m.sqrt(m.x(5))), m.i('X')),
-            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(3), null)),
-            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(8), null))
+            drawLatex('ω_S'),
+            drawLatex('iω_T'),
+            drawLatex('sqrt(2)W'),
+            drawLatex('frac(sqrt(3),sqrt(10))Y'),
+            drawLatex('iw'),
+            drawLatex('frac(1,sqrt(5))X'),
+            drawLatex('sqrt(2)g^3'),
+            drawLatex('sqrt(2)g^8')
         ],
         shortLabels : [
-            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
-            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
-            m.i('W'),
-            m.i('Y'),
-            m.i('iw'),
-            m.i('X'),
-            m.c(m.i('g'), m.supsub(m.x(3), null)),
-            m.c(m.i('g'), m.supsub(m.x(8), null))
+            drawLatex('ω_S'),
+            drawLatex('iω_T'),
+            drawLatex('W'),
+            drawLatex('Y'),
+            drawLatex('iw'),
+            drawLatex('X'),
+            drawLatex('g^3'),
+            drawLatex('g^8')
         ]
     },
     'gut' : {
         name : 'GUT Coordinates',
         longLabels : [
-            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
-            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
-            m.c(m.sqrt(m.x(2)), m.i('W')),
-            m.c(m.sqrt(m.x(2)), m.i("W'")),
-            m.i('iw'),
-            m.c(m.f(m.sqrt(m.x(3)), m.x(2)), m.i('B')),
-            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(3), null)),
-            m.c(m.c(m.sqrt(m.x(2)), m.i('g')), m.supsub(m.x(8), null))
+            drawLatex('ω_S'),
+            drawLatex('iω_T'),
+            drawLatex('sqrt(2)W'),
+            drawLatex('sqrt(2)W\''),
+            drawLatex('iw'),
+            drawLatex('frac(sqrt(3),2)B'),
+            drawLatex('sqrt(2)g^3'),
+            drawLatex('sqrt(2)g^8')
         ],
         shortLabels : [
-            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
-            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
-            m.i('W'),
-            m.i("W'"),
-            m.i('iw'),
-            m.i('B'),
-            m.c(m.i('g'), m.supsub(m.x(3), null)),
-            m.c(m.i('g'), m.supsub(m.x(8), null))
+            drawLatex('ω_S'),
+            drawLatex('iω_T'),
+            drawLatex('W'),
+            drawLatex('W\''),
+            drawLatex('iw'),
+            drawLatex('B'),
+            drawLatex('g^3'),
+            drawLatex('g^8')
         ]
     },
     'e8' : {
         name : 'Math Coordinates',
         longLabels : [
-            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
-            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
-            m.i('U'),
-            m.i('V'),
-            m.i('iw'),
-            m.i('x'),
-            m.i('y'),
-            m.i('z')
+            drawLatex('ω_S'),
+            drawLatex('iω_T'),
+            drawLatex('U'),
+            drawLatex('V'),
+            drawLatex('iw'),
+            drawLatex('x'),
+            drawLatex('y'),
+            drawLatex('z')
         ],
         shortLabels : [
-            m.c(m.i('ω'), m.supsub(null, m.i('S'))),
-            m.c(m.i('iω'), m.supsub(null, m.i('T'))),
-            m.i('U'),
-            m.i('V'),
-            m.i('iw'),
-            m.i('x'),
-            m.i('y'),
-            m.i('z')
+            drawLatex('ω_S'),
+            drawLatex('iω_T'),
+            drawLatex('U'),
+            drawLatex('V'),
+            drawLatex('iw'),
+            drawLatex('x'),
+            drawLatex('y'),
+            drawLatex('z')
         ]
     }
 }
@@ -499,8 +468,14 @@ function drawVisualization(w, h) {
                     renderParticle(g, x, y, scale, unitWidth * 6, p, null, 'cyan')
                 if (g_m.interactions.selection1 == p.id)
                     renderParticle(g, x, y, scale, unitWidth * 7, p, null, 'blue')
-                if (g_m.interactions.over == p.id)
+                if (g_m.interactions.over == p.id) {
                     renderParticle(g, x, y, scale, unitWidth * 3, p)
+
+                    var labelPos = transformPoint([x, y], w/3, 0, 0, -h/3, w/2, h/2)
+                    labelPos = add(labelPos, [d.offset().left, d.offset().top])
+                    labelPos = add(labelPos, [-20, -45])
+                    d.append($('<div style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
+                }
             }
             renderParticle(g, x, y, scale, unitWidth/3, p, p2p)
         })
@@ -678,7 +653,7 @@ function drawInteractions() {
     }
     function addParticle(r, p, theory) {
         r.append(drawCell(p.label, 3, 'left'))
-        r.append(drawCell('X'))
+        r.append(drawCell(drawLatex(particleSymbols[p.name])))
 
         var size = g_rowHeight
         var c = $('<canvas/>').attr('width', size).attr('height', size)
@@ -688,19 +663,13 @@ function drawInteractions() {
         r.append(drawCell(c))
 
         function drawNumber(a) {
-            function formatNumber(a) {
-                a = a.replace(/SQRT\((.*?)\)/g, function (_0, _1) {
-                    return '&radic;<span style="text-decoration:overline">' + _1 + '</span>'
-                })
-                a = a.replace(/[\(\)]/g, '')
-                return a
-            }
+            a = a.replace(/SQRT/g, 'sqrt')
             a = a.split(/\//)
-            if (a.length == 2) {
-                return $('<table style="font-size:small;text-align:center"><tr style="border-bottom:1px solid black"><td>' + formatNumber(a[0]) + '</td></tr><tr><td>' + formatNumber(a[1]) + '</td></tr></table>')
-            } else {
-                return $('<div/>').html(formatNumber(a[0]))
-            }
+            if (a.length == 2)
+                a = 'frac(' + a[0] + ',' + a[1] + ')'
+            else
+                a = a[0]
+            return drawLatex(a)
         }
         _.each(p[theory + 'coordlbl'].split(/,/), function (a) {
             r.append(drawCell(drawNumber(a)))
