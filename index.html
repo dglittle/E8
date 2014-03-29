@@ -26,7 +26,7 @@ th, td {
 <script src="symbols.js"></script>
 <script>
 
-var g_rowHeight = 34
+var g_rowHeight = 41
 
 var g_coordinateSystems = {
     'sm' : {
@@ -342,7 +342,8 @@ function p2p_color_to_id(r, g, b, a) {
     }
 })();
 
-function drawVisualization(w, h) {
+function drawVisualization(x, y, w, h) {
+    var dPos = [x, y]
 
     var pixelToParticleMap = null
 
@@ -383,8 +384,6 @@ function drawVisualization(w, h) {
                 var cs = g_coordinateSystems[g_m.coordinateSystem]
                 g.lineWidth = unitWidth
                 g.strokeStyle = 'black'
-                var dPos = d.offset()
-                dPos = [dPos.left, dPos.top]
                 for (var i = 0; i < 8; i++) {
                     var v = zeros(8)
                     v[i] = 1
@@ -472,7 +471,7 @@ function drawVisualization(w, h) {
                     renderParticle(g, x, y, scale, unitWidth * 3, p)
 
                     var labelPos = transformPoint([x, y], w/3, 0, 0, -h/3, w/2, h/2)
-                    labelPos = add(labelPos, [d.offset().left, d.offset().top])
+                    labelPos = add(labelPos, dPos)
                     labelPos = add(labelPos, [-20, -45])
                     d.append($('<div style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
                 }
@@ -483,7 +482,7 @@ function drawVisualization(w, h) {
         return c
     }
 
-    var d = $('<div/>')
+    var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
     var updateP2P = true
     function update() {
         d.empty().append(draw())
@@ -641,12 +640,12 @@ function drawVisualization(w, h) {
     return d
 }
 
-function drawInteractions() {
+function drawInteractions(x, y) {
     function drawCell(content, cols, align) {
         var c = $('<td width="' + ((cols || 1) * 6.666666666) + '%" colspan="' + (cols || 1) + '"/>')
         c.attr('align', align || 'middle')
         if (typeof(content) == 'string')
-            c.append($('<div style="max-height:34px;vertical-align:middle;overflow:hidden;"/>').text(content))
+            c.append($('<div style="max-height:' + g_rowHeight + 'px;vertical-align:middle;overflow:hidden;"/>').text(content))
         else
             c.append(content)
         return c
@@ -728,9 +727,9 @@ function drawInteractions() {
         return r
     }
 
-    var d = $('<div/>')
+    var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
     function update() {
-        var t = $('<table style="width:800px;margin:5px"/>')
+        var t = $('<table style="width:800px;height:' + g_rowHeight*5 + 'px"/>')
         t.append(drawHeader())
         t.append(drawParticles(g_m.coordinateSystem))
         d.empty().append(t)
@@ -745,7 +744,7 @@ function drawInteractions() {
     return d
 }
 
-function drawRotationPanel() {
+function drawRotationPanel(x, y) {
     function drawRotate(yes, cb) {
         var w = g_rowHeight
         var h = g_rowHeight
@@ -870,7 +869,7 @@ function drawRotationPanel() {
         return c
     }
     function drawCell(content, align) {
-        var c = $('<td width="25%"/>')
+        var c = $('<td width="' + 100/9 + '%"/>')
         c.attr('align', align || 'middle')
         if (typeof(content) == 'string')
             c.append($('<div style="max-height:' + g_rowHeight + 'px;vertical-align:middle;overflow:hidden;"/>').text(content))
@@ -878,31 +877,44 @@ function drawRotationPanel() {
             c.append(content)
         return c
     }
-    function drawRow(label, i) {
-        var r = $('<tr height="' + g_rowHeight + '">')
-        r.append(drawCell($('<div style="font-family:serif;font-style:italic"/>').html(label)))
-        r.append(drawCell($('<div class="H' + i + '" style="font-family:serif"/>')))
-        r.append(drawCell($('<div class="V' + i + '" style="font-family:serif"/>')))
-        r.append(drawCell(drawArrowCross(g_m.rotate.axes[0] == i, g_m.rotate.axes[1] == i, function (horz, vert) {
-            beginModelChange()
-            if (horz) g_m.rotate.axes[0] = i
-            if (vert) g_m.rotate.axes[1] = i
-            g_m.rotate.rotateZ = false
-            endModelChange()
-        })))
-        return r
-    }
-    function drawHeader() {
+    function draw() {
+        var t = $('<table width="600px;height:' + g_rowHeight*5 + 'px"/>')
+
         var r = $('<tr height="' + g_rowHeight + 'px" style="background: linear-gradient(to bottom, white, lightgrey);"/>')
+        t.append(r)
         r.append(drawCell($('<div style="font-size:small"/>').text('Rotation')))
-        r.append(drawCell('H'))
-        r.append(drawCell('V'))
+        _.each(g_coordinateSystems[g_m.coordinateSystem].longLabels, function (label, i) {
+            r.append(drawCell(label.clone()))
+        })
+
+        var r = $('<tr height="' + g_rowHeight + '">')
+        t.append(r)
         r.append(drawCell(drawRotate(g_m.rotate.rotateZ, function () {
             beginModelChange()
             g_m.rotate.rotateZ = !g_m.rotate.rotateZ
             endModelChange()
         })))
-        return r
+        _.each(_.range(8), function (i) {
+            r.append(drawCell(drawArrowCross(g_m.rotate.axes[0] == i, g_m.rotate.axes[1] == i, function (horz, vert) {
+                beginModelChange()
+                if (horz) g_m.rotate.axes[0] = i
+                if (vert) g_m.rotate.axes[1] = i
+                g_m.rotate.rotateZ = false
+                endModelChange()
+            })))
+        })
+
+        _.each(['H', 'V'], function (x, i) {
+            var r = $('<tr height="' + g_rowHeight + '">')
+            if (i == 0) r.css('background', '#f0f0f0')
+            t.append(r)
+            r.append(drawCell(x))
+            _.each(_.range(8), function (i) {
+                r.append(drawCell($('<div class="' + x + i + '" style="font-family:serif"/>')))
+            })
+        })
+
+        return t
     }
     function updateHV() {
         for (var i = 0; i < g_m.rotate.H.length; i++) {
@@ -911,15 +923,9 @@ function drawRotationPanel() {
         }
     }
 
-    var d = $('<div style="margin:5px"/>')
+    var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
     function update() {
-        var t = $('<table width="180px;height:324px"/>')
-        t.append(drawHeader())
-
-        _.each(g_coordinateSystems[g_m.coordinateSystem].longLabels, function (label, i) {
-            t.append(drawRow(label, i).css('background', i % 2 == 0 ? 'white' : '#f0f0f0'))
-        })
-        d.empty().append(t)
+        d.empty().append(draw())
         updateHV()
     }
     update()
@@ -943,10 +949,15 @@ function drawRotationPanel() {
     return d
 }
 
-function drawTheoryPanel() {
-    var d = $('<div style="margin:5px"/>')
+function drawTheoryPanel(x, y) {
+    var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;"/>')
+
     function update() {
-        var dd = $('<div width="180px"/>')
+        d.empty()
+
+        d.append($('<div style="width:200px;height:' + g_rowHeight + 'px;background: linear-gradient(to bottom, white, lightgrey);vertical-align:middle;display: table-cell;font-size:small"/>').text('Theory'))
+
+        var dd = $('<div style="width:190px;height:' + g_rowHeight*4 + 'px;"/>')
 
         function createSelect(options, select, cb) {
             var s = $('<select style="font-size:x-small;width:100%"/>')
@@ -975,7 +986,17 @@ function drawTheoryPanel() {
             g_m.theory = newTheory
             endModelChange()
         })
-        dd.append(_.splitHorz(2, 1, $('<div style="font-size:small;padding-right:10px"/>').text('Theory'), theorySelect).css('margin-bottom', '10px'))
+        dd.append(theorySelect.css('margin-top', '5px'))
+
+        var coordinateSelect = createSelect(_.map(g_coordinateSystems, function (cs) { return cs.name }), g_m.coordinateSystem, function (cs) {
+            beginModelChange()
+            var newHV = g_coordinateSystemsConversions[g_m.coordinateSystem + '->' + cs](g_m.rotate.H, g_m.rotate.V)
+            g_m.rotate.H = newHV[0]
+            g_m.rotate.V = newHV[1]
+            g_m.coordinateSystem = cs
+            endModelChange()
+        }).css('margin-top', '5px')
+        dd.append(coordinateSelect)
 
         var savedRotations = createSelect(_.map(g_db.savedRotations, function (r) { return r.name }), null, function (i) {
             var r = g_db.savedRotations[i]
@@ -1017,20 +1038,9 @@ function drawTheoryPanel() {
                 saveDb()
                 updateMain()
             }
-        })), savedRotations).css('margin-bottom', '10px'))
+        })), savedRotations).css('margin-top', '10px'))
 
-        var coordinateSelect = createSelect(_.map(g_coordinateSystems, function (cs) { return cs.name }), g_m.coordinateSystem, function (cs) {
-            beginModelChange()
-            var newHV = g_coordinateSystemsConversions[g_m.coordinateSystem + '->' + cs](g_m.rotate.H, g_m.rotate.V)
-            g_m.rotate.H = newHV[0]
-            g_m.rotate.V = newHV[1]
-            g_m.coordinateSystem = cs
-            endModelChange()
-        }).css('margin-bottom', '10px')
-
-        dd.append(coordinateSelect)
-
-        d.empty().append(dd)
+        d.append(dd)
     }
     update()
     d.addClass('onModelChange')[0].onModelChange = function () {
@@ -1044,13 +1054,35 @@ function drawTheoryPanel() {
 function updateMain() {
     w = $('body')[0].clientWidth
     h = $('body')[0].clientHeight
-    var bottomHeight = g_rowHeight * 5 + 10
-    var sideWidth = 190
-    size = Math.min(w - sideWidth, h - bottomHeight)
+    var bottomHeight = g_rowHeight * 5
+    size = Math.min(w, h - bottomHeight)
 
-    var d = $('<div/>').width(w).height(h)
-    d.append(_.splitVert(1, bottomHeight, _.splitHorz(sideWidth, 1, $('<div/>').append(drawTheoryPanel()).append(drawRotationPanel()), drawVisualization(size, size)), drawInteractions()))
-    $('body').empty().append(d)
+    var theory = drawTheoryPanel(0, h - bottomHeight)
+    var rotations = drawRotationPanel(200, h - bottomHeight)
+    var interactions = drawInteractions(0, h - bottomHeight)
+    var about = $('<div style="box-sizing:border-box;padding:10px;position:absolute;left:0px;top:' + (h-bottomHeight) + 'px;width:800px;height:200px;overflow:auto"/>').html('The Elementary Particle Explorer displays the charges of all <a href="http://en.wikipedia.org/wiki/Elementary_particle">elementary particles</a>, with a symbol assigned to each particle according to <a href="http://en.wikipedia.org/wiki/Antony_Garrett_Lisi">Garrett Lisi</a>\'s <a href="http://arxiv.org/pdf/0711.0770v1.pdf">An Exceptionally Simple Theory of Everything</a> (pdf).<br/><br/>Each particle has two spin charges with respect to the gravitational force, two strong nuclear force charges, and three electroweak charges which combine to equal the electric charge. These charges exist in eight dimensional charge space, and their values correspond to some points of the <a href="http://en.wikipedia.org/wiki/E8_(mathematics)">E8 polytope</a>.<br/><br/>The plot is created by a projection of these points onto a two dimensional plane spanned by a horizontal direction, H, and a vertical direction, V, in eight dimensional charge space.  Any of the eight axes may be selected by pressing the control buttons, and dragged closer to H or V in the viewer, making that kind of charge more apparent in the plot. Select the left-right arrow to choose an axis to rotate towards the horizontal, H, and select the up-down arrow to choose an axis to rotate towards the vertical, V, or click the center to rotate towards both.  You can also rotate the plot in the viewing plane via the cyclone button. The display of triality and axes may be toggled using the checkboxes on the bottom panel. Rotations may be temporarily saved in "Saved Rotations," where some default rotations have been provided.<br/><br/>When a particle is clicked in the viewer, the particles it can interact with will be highlighted in light blue. Selecting one of the highlighted particles reveals the third (and possibly fourth) particle resulting from their interaction, based on charge conservation. This charge balance is illustrated via yellow and green rays, as well as the explicit charges shown summed in the Interaction panel.<br/><br/>CREDITS<br/><br/>This JavaScript/HTML5 implementation is based on a Flash 9 application that was partially funded by a grant from <a href="http://www.fqxi.org/">The Foundational Questions Institute</a>, and built by Troy Gardner of <a href="http://troyworks.com/">troyworks</a>, using the open source troyworks framework. Graphic design was contributed by Prince Pal, and creative assistance was provided by Garrett Lisi.')
+
+    var tab = 0
+    function updateTabs(t) {
+        if (t !== undefined) tab = t
+        theory.css('display', tab == 0 ? 'block' : 'none')
+        rotations.css('display', tab == 0 ? 'block' : 'none')
+        interactions.css('display', tab == 1 ? 'block' : 'none')
+        about.css('display', tab == 2 ? 'block' : 'none')
+    }
+    updateTabs()
+    var tabs = $('<div style="position:absolute;left:0px;top:' + (h-bottomHeight-20) + 'px"/>')
+    tabs.append($('<button/>').text('Rotations').click(function () { updateTabs(0) }))
+    tabs.append($('<button/>').text('Interactions').click(function () { updateTabs(1) }))
+    tabs.append($('<button/>').text('About').click(function () { updateTabs(2) }))
+
+    $('body').empty().
+        append(drawVisualization(0, 0, size, size)).
+        append(theory).
+        append(rotations).
+        append(interactions).
+        append(about).
+        append(tabs)
 }
 
 function loadDb() {
