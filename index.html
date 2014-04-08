@@ -829,31 +829,35 @@ function drawVisualizationSVG(x, y, w, h) {
                 labelPos = add(pos, [-20, -45])
                 d.append($('<div style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
             }
-            svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth/3, p).on('mousemove', function () {
-                lastOver = p.id
-                if (!dragging) {
-                    beginModelChange()
-                    g_m.interactions.over = lastOver
-                    endModelChange()
-                }
-            }).on('mouseout', function () {
-                lastOver = 0
-                beginModelChange()
-                g_m.interactions.over = lastOver
-                endModelChange()
-            }).on('touchstart', function () {
-                lastOver = p.id
-            }))
+
+            // work here
+            svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth/3, p))            
+            // svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth/3, p).on('mousemove', function () {
+            //     lastOver = p.id
+            //     if (!dragging) {
+            //         beginModelChange()
+            //         g_m.interactions.over = lastOver
+            //         endModelChange()
+            //     }
+            // }).on('mouseout', function () {
+            //     lastOver = 0
+            //     beginModelChange()
+            //     g_m.interactions.over = lastOver
+            //     endModelChange()
+            // }).on('touchstart', function () {
+            //     lastOver = p.id
+            // }))
         })
 
-        svg.on('mousemove', function (e) {
-            if (e.target == svg[0]) {
-                lastOver = 0
-                beginModelChange()
-                g_m.interactions.over = lastOver
-                endModelChange()
-            }
-        })
+    // work here
+        // svg.on('mousemove', function (e) {
+        //     if (e.target == svg[0]) {
+        //         lastOver = 0
+        //         beginModelChange()
+        //         g_m.interactions.over = lastOver
+        //         endModelChange()
+        //     }
+        // })
 
         return svg
     }
