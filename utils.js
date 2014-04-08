@@ -40,7 +40,7 @@ function grabMouse(d, cb, onUp) {
         }
     })
     d.on('touchstart', function (e) {
-        e.originalEvent.preventDefault()
+        e.preventDefault()
         cb(e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY)
 
         var oldMove = document.ontouchmove
