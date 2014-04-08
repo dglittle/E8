@@ -726,8 +726,9 @@ function drawVisualizationSVG(x, y, w, h) {
         ]
     }    
 
-    function draw() {
-        var svg = $('<svg style="width:' + w + 'px;height:' + h + 'px"/>')
+    function draw(svg) {
+        if (!svg) svg = $('<svg style="width:' + w + 'px;height:' + h + 'px"/>')
+        else svg.empty()
 
         function svgAppend(type, attributes, style) {
             svg.append(drawSVG(type, attributes, style))
@@ -865,18 +866,11 @@ function drawVisualizationSVG(x, y, w, h) {
     var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px"/>')
     function update() {
         var svg = d.find('svg')
-        if (svg.size() != 0) {
-            svg.empty()
+        if (svg.size() == 0) {
+            d.append(draw())
         } else {
-            svg = $('<svg style="width:' + w + 'px;height:' + h + 'px"/>')
-            d.append(svg)
+            draw(svg)
         }
-        svg.append(drawSVG('text', { x : 50, y : 50 }, 'fill:red').text('HHHH: ' + g_m.rotate.H[0]))
-
-        // d.append($('<div/>').text())
-        // d.append($('<svg style>'))
-        // d.children().remove()
-        // d.append(draw())
     }
 
     update()
