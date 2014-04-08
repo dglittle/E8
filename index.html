@@ -27,10 +27,12 @@ th, td {
 <script>
 
 var g_rowHeight = 41
+var g_controlPanelWidth = 800
+var g_controlPanelHeight = g_rowHeight * 5
 
 var g_coordinateSystems = {
     'sm' : {
-        name : 'Physics Coordinates',
+        name : 'Physics',
         longLabels : [
             drawLatex('ω_S'),
             drawLatex('iω_T'),
@@ -53,7 +55,7 @@ var g_coordinateSystems = {
         ]
     },
     'gut' : {
-        name : 'GUT Coordinates',
+        name : 'GUT',
         longLabels : [
             drawLatex('ω_S'),
             drawLatex('iω_T'),
@@ -76,7 +78,7 @@ var g_coordinateSystems = {
         ]
     },
     'e8' : {
-        name : 'Math Coordinates',
+        name : 'Math',
         longLabels : [
             drawLatex('ω_S'),
             drawLatex('iω_T'),
@@ -343,8 +345,6 @@ function p2p_color_to_id(r, g, b, a) {
 })();
 
 function drawVisualization(x, y, w, h) {
-    var dPos = [x, y]
-
     var pixelToParticleMap = null
 
     function updatePixelToParticleMap() {
@@ -399,7 +399,6 @@ function drawVisualization(x, y, w, h) {
                     v[i] = 1.1
                     v = project(v)
                     v = transformPoint(v, w/3, 0, 0, -h/3, w/2, h/2)
-                    v = add(v, dPos)
 
                     var label = cs.shortLabels[i].clone()
                     v = sub(v, mul(.5, cs.shortLabelSizes[i]))
@@ -471,7 +470,6 @@ function drawVisualization(x, y, w, h) {
                     renderParticle(g, x, y, scale, unitWidth * 3, p)
 
                     var labelPos = transformPoint([x, y], w/3, 0, 0, -h/3, w/2, h/2)
-                    labelPos = add(labelPos, dPos)
                     labelPos = add(labelPos, [-20, -45])
                     d.append($('<div style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
                 }
@@ -640,6 +638,365 @@ function drawVisualization(x, y, w, h) {
     return d
 }
 
+;(function () {
+    function circle(x, y, size) {
+        return drawSVG('circle', { cx : x, cy : y, r : size })
+    }
+    function square(x, y, size) {
+        return drawSVG('path', { d :
+            'M' + (x - size) + ' ' + (y - size) +
+            ' L' + (x - size) + ' ' + (y + size) +
+            ' L' + (x + size) + ' ' + (y + size) +
+            ' L' + (x + size) + ' ' + (y - size) +
+            ' Z'
+        })
+    }
+    function dia(x, y, size) {
+        return drawSVG('path', { d :
+            'M' + (x - size) + ' ' + (y) +
+            ' L' + (x) + ' ' + (y + size) +
+            ' L' + (x + size) + ' ' + (y) +
+            ' L' + (x) + ' ' + (y - size) +
+            ' Z'
+        })
+    }
+    var glyphu = [
+        [-1/2, -1/(2 * Math.sqrt(3))],
+        [-1/4, 1/(4 * Math.sqrt(3))],
+        [-1/2, 1/Math.sqrt(3)],
+        [0, 1/(Math.sqrt(3))],
+        [1/2, -1/(2 * Math.sqrt(3))]
+    ]
+    var glyphd = [
+        [-1/2, -1/(2 * Math.sqrt(3))],
+        [-3/4, 1/(4 * Math.sqrt(3))],
+        [-1/4, 1/(4 * Math.sqrt(3))],
+        [0, 1/(Math.sqrt(3))],
+        [1/2, -1/(2 * Math.sqrt(3))]
+    ]
+    var sizeMap = {
+        's' : .75,
+        'm' : .85,
+        'b' : 1.0
+    }
+    function glyph(x, y, scale, sym) {
+        var size = scale * sizeMap[sym[0]]
+        var mx = size * (sym[1] == 'l' ? 1 : -1)
+        var my = size * (sym[3] == 'p' ? 1 : -1)
+        var gl = (sym[2] == 'u') == (sym[3] == 'p') ? glyphu : glyphd
+        return drawSVG('path', { d :
+            _.map(gl, function (gl, i) {
+                return (i == 0 ? 'M' : 'L') + (x + mx * gl[0]) + ' ' + (y + my * gl[1])
+            }).join(' ') +
+            ' Z'
+        })
+    }
+    drawParticleSVG = function (x, y, scale, lineWidth, p, justLine) {
+        var size = p.symbol[0] == 's' ? .8 : 1
+        var sym = p.symbol.slice(1)
+        var d = null
+        if (sym == 'cir') {
+            d = circle(x, y, size * scale / 2)
+        } else if (sym == 'squ') {
+            d = square(x, y, size * .4 * scale)
+        } else if (sym == 'dia') {
+            d = dia(x, y, size * .4 * Math.sqrt(2) * scale)
+        } else {
+            d = glyph(x, y, scale, p.symbol)
+        }
+        if (!justLine) {
+            d.myCss('fill:' + colorMap[p.color])
+        } else {
+            d.myCss('fill:none')
+        }
+        d.myCss('stroke:' + (justLine || 'black') + ';stroke-width:' + lineWidth)
+        return d
+    }
+})();
+
+function drawSVG(type, attributes, style) {
+    return $(document.createElementNS('http://www.w3.org/2000/svg', type)).attr(attributes).myCss(style)
+}
+
+function drawVisualizationSVG(x, y, w, h) {
+    function transformPoint(p, _0, _1, _2, _3, _4, _5) {
+        return [
+            p[0] * _0 + p[1] * _2 + _4,
+            p[0] * _1 + p[1] * _3 + _5
+        ]
+    }    
+
+    function draw() {
+        var svg = $('<svg style="width:' + w + 'px;height:' + h + 'px"/>')
+
+        function svgAppend(type, attributes, style) {
+            svg.append(drawSVG(type, attributes, style))
+        }
+
+        function trans(p) {
+            return transformPoint(p, w/3, 0, 0, -h/3, w/2, h/2)
+        }
+        var unitWidth = 1
+
+        var H = g_m.rotate.H
+        var V = g_m.rotate.V
+
+        function project(x) {
+            return trans([dot(H, x), dot(V, x)])
+        }
+        function projectParticle(id) {
+            var p = particles[id - 1]
+            return project(p[g_m.coordinateSystem + 'coord'])
+        }
+
+        var scale = mag(sub(trans([0, 0]), trans([0.1, 0])))
+
+        if (g_m.showAxes) {
+            var cs = g_coordinateSystems[g_m.coordinateSystem]
+
+            for (var i = 0; i < 8; i++) {
+                var v = zeros(8)
+                v[i] = 1
+                v1 = project(v)
+                v[i] *= -1
+                v2 = project(v)
+
+                svgAppend('line', {
+                    x1 : v1[0], y1 : v1[1],
+                    x2 : v2[0], y2 : v2[1]
+                }, 'stroke:black;stroke-width:' + unitWidth + '')
+
+                v[i] = 1.1
+                v = project(v)
+
+                var label = cs.shortLabels[i].clone()
+                v = sub(v, mul(.5, cs.shortLabelSizes[i]))
+                d.append($('<div style="position:absolute;z-index:-1;left:' + v[0] + 'px;top:' + v[1] + 'px"/>').append(label))
+            }
+        }
+
+        if (g_m.interactions.interaction) {
+            var x = _.map(g_m.interactions.interaction, projectParticle)
+
+            svgAppend('line', {
+                x1 : x[0][0], y1 : x[0][1],
+                x2 : x[1][0], y2 : x[1][1]
+            }, 'stroke:yellow;stroke-width:' + unitWidth*7 + '')
+
+            svgAppend('circle', {
+                cx : x[0][0], cy : x[0][1], r : scale
+            }, 'fill:yellow')
+
+            svgAppend('circle', {
+                cx : x[1][0], cy : x[1][1], r : scale
+            }, 'fill:yellow')
+
+            var origin = trans([0, 0])
+            svgAppend('line', {
+                x1 : origin[0], y1 : origin[1],
+                x2 : x[2][0], y2 : x[2][1]
+            }, 'stroke:lightgreen;stroke-width:' + unitWidth*7 + '')
+
+            svgAppend('circle', {
+                cx : x[2][0], cy : x[2][1], r : scale
+            }, 'fill:lightgreen')
+        }
+
+        if (g_m.showTriality && g_m.theory == 'e8') {
+            _.each(trialities, function (t) {
+                var locs = _.map(t, projectParticle)
+                svgAppend('path', {
+                    d : 'M' + locs[0][0] + ' ' + locs[0][1] +
+                        ' L' + locs[1][0] + ' ' + locs[1][1] +
+                        ' L' + locs[2][0] + ' ' + locs[2][1] +
+                        ' Z'
+                }, 'fill:none;stroke:black;stroke-width:' + unitWidth/3 + '')
+            })
+        }
+
+        var noInteractionHighlight = _.makeSet(g_m.interactions.interaction || [])
+
+        _.each(particles, function (p) {
+            if (!p[g_m.theory]) return
+            var pos = project(p[g_m.coordinateSystem + 'coord'])
+            if (g_selection1_interactions[p.id] && !noInteractionHighlight[p.id])
+                svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth * 6, p, 'cyan'))
+            if (g_m.interactions.selection1 == p.id)
+                svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth * 7, p, 'blue'))
+            if (g_m.interactions.over == p.id) {
+                svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth * 3, p))
+
+                labelPos = add(pos, [-20, -45])
+                d.append($('<div style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
+            }
+            svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth/3, p).on('mousemove', function () {
+                lastOver = p.id
+                if (!dragging) {
+                    beginModelChange()
+                    g_m.interactions.over = lastOver
+                    endModelChange()
+                }
+            }).on('mouseout', function () {
+                lastOver = 0
+                beginModelChange()
+                g_m.interactions.over = lastOver
+                endModelChange()
+            }).on('touchstart', function () {
+                lastOver = p.id
+            }))
+        })
+
+        svg.on('mousemove', function (e) {
+            if (e.target == svg[0]) {
+                lastOver = 0
+                beginModelChange()
+                g_m.interactions.over = lastOver
+                endModelChange()
+            }
+        })
+
+        return svg
+    }
+
+    var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
+    function update() {
+        d.empty().append(draw())
+    }
+
+    update()
+    var downPos = null
+    var dragging = false
+    var lastOver = 0
+    grabMouseRelative(d, function (dx, dy, x, y) {
+        dragging = true
+        if (!downPos) downPos = [x, y]
+        if (dx == 0 && dy == 0) return
+
+        // H = current Horizontal view plane vector (8D)
+        // V = current Vertical view plane vector
+        // ax = horizontal rotation angle from user's horizontal mouse drag in viewport
+        // ay = vertical rotation angle from user's vertical mouse drag in viewport
+        // a = H-axis vector chosen (on left) to rotate towards
+        // A = V-axis vector chosen to rotate towards
+        // g,G = temporary vectors
+        // H', V' = result
+
+        // g = a - (a.V)V - (a.H)H
+        // G = A - (A.V)V - (A.H)H
+        // g = g/|g|
+        // G = G/|G|
+        // H' = H cos ax + g sin ax
+        // H' = H'/|H'|
+        // V' = V - (V.H')H'
+        // V' = V'/|V'|
+        // V' = V' cos ay + G sin ay
+        // V' = V'/|V'|
+
+        // for flat rotation
+        // H' = H cos - V sin
+        // V' = V cos + H sin        
+
+        var H = g_m.rotate.H
+        var V = g_m.rotate.V
+
+        if (g_m.rotate.rotateZ) {
+            var pos = d.offset()
+            pos = [
+                x - (pos.left + w/2),
+                y - (pos.top + h/2)
+            ]
+            var prevPos = sub(pos, [dx, dy])
+            var prevAngle = Math.atan2(-prevPos[1], prevPos[0])
+            var angle = Math.atan2(-pos[1], pos[0])
+            var da = angle - prevAngle
+            if (da < 0) da += tau
+            var a = Math.atan2(pos[1], pos[0])
+            var H_ = sub(mul(H, Math.cos(da)), mul(V, Math.sin(da)))
+            var V_ = add(mul(V, Math.cos(da)), mul(H, Math.sin(da)))
+            H_ = norm(H_)
+            V_ = norm(V_)
+        } else {
+            var radiansPerPixel = tau / 1000
+            var ax = dx * radiansPerPixel
+            var ay = -dy * radiansPerPixel
+
+            var a = zeros(8)
+            a[g_m.rotate.axes[0]] = 1
+            var A = zeros(8)
+            A[g_m.rotate.axes[1]] = 1
+
+            var g = sub(sub(a, mul(dot(a, V), V)), mul(dot(a, H), H))
+            var G = sub(sub(A, mul(dot(A, V), V)), mul(dot(A, H), H))
+            g = norm(g)
+            G = norm(G)
+
+            var H_ = add(mul(H, Math.cos(ax)), mul(g, Math.sin(ax)))
+            H_ = norm(H_)
+            V_ = sub(V, mul(dot(V, H_), H_))
+            V_ = norm(V_)
+            V_ = add(mul(V_, Math.cos(ay)), mul(G, Math.sin(ay)))
+            V_ = norm(V_)
+        }
+
+        beginModelChange()
+        g_m.rotate.H = H_
+        g_m.rotate.V = V_
+        endModelChange()
+    }, function (x, y) {
+        dragging = false
+        if (dist(sub([x, y], downPos)) < 5) {
+            var id = lastOver
+            if (id) {
+                beginModelChange()
+                var i = g_selection1_interactions[id]
+                if (g_m.interactions.selection1 && i) {
+                    g_m.interactions.selection2 = id
+                    g_m.interactions.result = i[0]
+                    g_m.interactions.interaction = i[1]
+                } else {
+                    g_m.interactions.selection1 = id
+                    g_m.interactions.selection2 = null
+                    g_m.interactions.result = null
+                    g_m.interactions.interaction = null
+                    g_selection1_interactions = {}
+                    _.each(interactions, function (i) {
+                        if (i.indexOf(id) != -1) {
+                            var others = []
+                            _.each(i, function (i) {
+                                if (i != id)
+                                    others.push(i)
+                            })
+                            g_selection1_interactions[others[0]] = [others[1], i]
+                            g_selection1_interactions[others[1]] = [others[0], i]
+                        }
+                    })
+                }
+                endModelChange()
+            }
+        }
+        downPos = null
+    })
+
+    d.addClass('onModelChange')[0].onModelChange = function () {
+        var diff = false
+        for (var i = 0; i < g_m.rotate.H.length; i++) {
+            if (g_m.rotate.H[i] != g_old_m.rotate.H[i]) {
+                diff = true
+                break
+            }
+            if (g_m.rotate.V[i] != g_old_m.rotate.V[i]) {
+                diff = true
+                break
+            }
+        }
+        if (diff || isModelDifferent('theory', 'coordinateSystem', 'showAxes', 'showTriality', 'interactions.over', 'interactions.selection1', 'interactions.selection2', 'interactions.result')) {
+            update()
+        }
+    }
+
+    return d
+}
+
 function drawInteractions(x, y) {
     function drawCell(content, cols, align) {
         var c = $('<td width="' + ((cols || 1) * 6.666666666) + '%" colspan="' + (cols || 1) + '"/>')
@@ -655,11 +1012,9 @@ function drawInteractions(x, y) {
         r.append(drawCell(drawLatex(particleSymbols[p.name])))
 
         var size = g_rowHeight
-        var c = $('<canvas/>').attr('width', size).attr('height', size)
-        var g = c.get()[0].getContext("2d")
-        g.setTransform(size/2, 0, 0, -size/2, size/2, size/2)
-        renderParticle(g, 0, 0, 1, 1/size, p)
-        r.append(drawCell(c))
+        var svg = $('<svg style="width:' + size + 'px;height:' + size + 'px">')
+        svg.append(drawParticleSVG(size/2, size/2, size/2, 1, p))
+        r.append(drawCell(svg))
 
         function drawNumber(a) {
             a = a.replace(/SQRT/g, 'sqrt')
@@ -713,13 +1068,12 @@ function drawInteractions(x, y) {
         r.append(drawCell(checks, 4, 'left'))
 
         var size = g_rowHeight
-        var c = $('<canvas/>').attr('width', size).attr('height', size)
-        var g = c.get()[0].getContext("2d")
-        g.setTransform(size/2, 0, 0, -size/2, size/2, size/2)
-        renderParticle(g, 0.3, 0.3, 1, 1/size, { symbol : 'scir', color : 'mrora' })
-        renderParticle(g, 0, 0, 1, 1/size, { symbol : 'msqu', color : 'mblue' })
-        renderParticle(g, -0.3, -0.3, 1, 1/size, { symbol : 'sdia', color : 'mgree' })
-        r.append(drawCell(c))
+
+        var svg = $('<svg style="width:' + size + 'px;height:' + size + 'px">')
+        svg.append(drawParticleSVG(size/2*1.3, size/2*.7, size/2, 1, { symbol : 'scir', color : 'mrora' }))
+        svg.append(drawParticleSVG(size/2, size/2, size/2, 1, { symbol : 'msqu', color : 'mblue' }))
+        svg.append(drawParticleSVG(size/2*.7, size/2*1.3, size/2, 1, { symbol : 'sdia', color : 'mgree' }))
+        r.append(drawCell(svg))
 
         _.each(g_coordinateSystems[g_m.coordinateSystem].shortLabels, function (a) {
             r.append(drawCell(a))
@@ -729,7 +1083,7 @@ function drawInteractions(x, y) {
 
     var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
     function update() {
-        var t = $('<table style="width:800px;height:' + g_rowHeight*5 + 'px"/>')
+        var t = $('<table style="width:' + g_controlPanelWidth + 'px;height:' + g_rowHeight*5 + 'px"/>')
         t.append(drawHeader())
         t.append(drawParticles(g_m.coordinateSystem))
         d.empty().append(t)
@@ -882,7 +1236,7 @@ function drawRotationPanel(x, y) {
 
         var r = $('<tr height="' + g_rowHeight + 'px" style="background: linear-gradient(to bottom, white, lightgrey);"/>')
         t.append(r)
-        r.append(drawCell($('<div style="font-size:small"/>').text('Rotation')))
+        r.append(drawCell($('<div style="font-size:small"/>').text('Axis')))
         _.each(g_coordinateSystems[g_m.coordinateSystem].longLabels, function (label, i) {
             r.append(drawCell(label.clone()))
         })
@@ -955,10 +1309,6 @@ function drawTheoryPanel(x, y) {
     function update() {
         d.empty()
 
-        d.append($('<div style="width:200px;height:' + g_rowHeight + 'px;background: linear-gradient(to bottom, white, lightgrey);vertical-align:middle;display: table-cell;font-size:small"/>').text('Theory'))
-
-        var dd = $('<div style="width:190px;height:' + g_rowHeight*4 + 'px;"/>')
-
         function createSelect(options, select, cb) {
             var s = $('<select style="font-size:x-small;width:100%"/>')
             _.each(options, function (name, key) {
@@ -986,7 +1336,12 @@ function drawTheoryPanel(x, y) {
             g_m.theory = newTheory
             endModelChange()
         })
-        dd.append(theorySelect.css('margin-top', '5px'))
+
+        var temp = _.splitHorz(2, 1, $('<div style="font-size:small;margin-left:5px"/>').text('Theory'), $('<div style="box-sizing:border-box;width:100%;padding-right:20px;padding-left:10px"/>').append(theorySelect))
+        temp.find('td').attr('valign', 'middle')
+        d.append($('<div style="width:200px;height:' + g_rowHeight + 'px;background: linear-gradient(to bottom, white, lightgrey)"/>').append(temp))
+
+        var t = $('<table style="background:#f0f0f0;width:185px;height:' + g_rowHeight*4 + 'px"/>')
 
         var coordinateSelect = createSelect(_.map(g_coordinateSystems, function (cs) { return cs.name }), g_m.coordinateSystem, function (cs) {
             beginModelChange()
@@ -995,8 +1350,12 @@ function drawTheoryPanel(x, y) {
             g_m.rotate.V = newHV[1]
             g_m.coordinateSystem = cs
             endModelChange()
-        }).css('margin-top', '5px')
-        dd.append(coordinateSelect)
+        })
+        t.append($('<tr/>').append(
+            $('<td/>').append($('<div style="font-size:small;padding-left:5px;padding-right:10px;padding-top:5px;padding-bottom:10px"/>').text('Coordinates:'))
+        ).append(
+            $('<td style="padding-right:5px"/>').append(coordinateSelect)
+        ))
 
         var savedRotations = createSelect(_.map(g_db.savedRotations, function (r) { return r.name }), null, function (i) {
             var r = g_db.savedRotations[i]
@@ -1015,8 +1374,8 @@ function drawTheoryPanel(x, y) {
 
             endModelChange()
 
-        }).css('height', '90px').attr('multiple', 'multiple')
-        dd.append(_.splitHorz(.5, .5, $('<div style="font-size:small"/>').text('Saved Rotations').append($('<button style="font-size:x-small;width:60px;margin-top:5px;"/>').text('Save').click(function () {
+        }).attr('multiple', 'multiple').myCss('height:100%;width:100%')
+        var savedRotationsButtons = $('<div style="font-size:small"/>').text('Saved Rotations').append($('<button style="font-size:x-small;width:60px;margin-top:5px;"/>').text('Save').click(function () {
             var name = prompt('Please enter a name for your rotation')
             if (name) {
                 g_db.savedRotations.push({
@@ -1038,9 +1397,14 @@ function drawTheoryPanel(x, y) {
                 saveDb()
                 updateMain()
             }
-        })), savedRotations).css('margin-top', '10px'))
+        }))
+        t.append($('<tr height="100%"/>').append(
+            $('<td valign="top"/>').append(savedRotationsButtons.myCss('padding-left:5px'))
+        ).append(
+            $('<td width="100%" style="padding-right:5px;padding-bottom:5px"/>').append(savedRotations)
+        ))
 
-        d.append(dd)
+        d.append(t)
     }
     update()
     d.addClass('onModelChange')[0].onModelChange = function () {
@@ -1051,33 +1415,38 @@ function drawTheoryPanel(x, y) {
     return d
 }
 
+var g_tab = 0
 function updateMain() {
-    w = $('body')[0].clientWidth
-    h = $('body')[0].clientHeight
-    var bottomHeight = g_rowHeight * 5
-    size = Math.min(w, h - bottomHeight)
+    var w = $('body')[0].clientWidth
+    var h = $('body')[0].clientHeight
 
-    var theory = drawTheoryPanel(0, h - bottomHeight)
-    var rotations = drawRotationPanel(200, h - bottomHeight)
-    var interactions = drawInteractions(0, h - bottomHeight)
-    var about = $('<div style="box-sizing:border-box;padding:10px;position:absolute;left:0px;top:' + (h-bottomHeight) + 'px;width:800px;height:200px;overflow:auto"/>').html('The Elementary Particle Explorer displays the charges of all <a href="http://en.wikipedia.org/wiki/Elementary_particle">elementary particles</a>, with a symbol assigned to each particle according to <a href="http://en.wikipedia.org/wiki/Antony_Garrett_Lisi">Garrett Lisi</a>\'s <a href="http://arxiv.org/pdf/0711.0770v1.pdf">An Exceptionally Simple Theory of Everything</a> (pdf).<br/><br/>Each particle has two spin charges with respect to the gravitational force, two strong nuclear force charges, and three electroweak charges which combine to equal the electric charge. These charges exist in eight dimensional charge space, and their values correspond to some points of the <a href="http://en.wikipedia.org/wiki/E8_(mathematics)">E8 polytope</a>.<br/><br/>The plot is created by a projection of these points onto a two dimensional plane spanned by a horizontal direction, H, and a vertical direction, V, in eight dimensional charge space.  Any of the eight axes may be selected by pressing the control buttons, and dragged closer to H or V in the viewer, making that kind of charge more apparent in the plot. Select the left-right arrow to choose an axis to rotate towards the horizontal, H, and select the up-down arrow to choose an axis to rotate towards the vertical, V, or click the center to rotate towards both.  You can also rotate the plot in the viewing plane via the cyclone button. The display of triality and axes may be toggled using the checkboxes on the bottom panel. Rotations may be temporarily saved in "Saved Rotations," where some default rotations have been provided.<br/><br/>When a particle is clicked in the viewer, the particles it can interact with will be highlighted in light blue. Selecting one of the highlighted particles reveals the third (and possibly fourth) particle resulting from their interaction, based on charge conservation. This charge balance is illustrated via yellow and green rays, as well as the explicit charges shown summed in the Interaction panel.<br/><br/>CREDITS<br/><br/>This JavaScript/HTML5 implementation is based on a Flash 9 application that was partially funded by a grant from <a href="http://www.fqxi.org/">The Foundational Questions Institute</a>, and built by Troy Gardner of <a href="http://troyworks.com/">troyworks</a>, using the open source troyworks framework. Graphic design was contributed by Prince Pal, and creative assistance was provided by Garrett Lisi.')
+    var x = w/2 - g_controlPanelWidth/2
+    if (x < 0) x = 0
 
-    var tab = 0
+    var size = Math.min(w, h - g_controlPanelHeight)
+    var visualization = drawVisualizationSVG(w/2 - size/2, 0, size, size)
+
+    var y = h - g_controlPanelHeight
+    var theory = drawTheoryPanel(x, y)
+    var rotations = drawRotationPanel(x + 200, y)
+    var interactions = drawInteractions(x, y)
+    var about = $('<div style="box-sizing:border-box;padding:10px;position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + g_controlPanelWidth + 'px;height:' + g_controlPanelHeight + 'px;overflow:auto"/>').html('The Elementary Particle Explorer displays the charges of all <a href="http://en.wikipedia.org/wiki/Elementary_particle">elementary particles</a>, with a symbol assigned to each particle according to <a href="http://en.wikipedia.org/wiki/Antony_Garrett_Lisi">Garrett Lisi</a>\'s <a href="http://arxiv.org/pdf/0711.0770v1.pdf">An Exceptionally Simple Theory of Everything</a> (pdf).<br/><br/>Each particle has two spin charges with respect to the gravitational force, two strong nuclear force charges, and three electroweak charges which combine to equal the electric charge. These charges exist in eight dimensional charge space, and their values correspond to some points of the <a href="http://en.wikipedia.org/wiki/E8_(mathematics)">E8 polytope</a>.<br/><br/>The plot is created by a projection of these points onto a two dimensional plane spanned by a horizontal direction, H, and a vertical direction, V, in eight dimensional charge space.  Any of the eight axes may be selected by pressing the control buttons, and dragged closer to H or V in the viewer, making that kind of charge more apparent in the plot. Select the left-right arrow to choose an axis to rotate towards the horizontal, H, and select the up-down arrow to choose an axis to rotate towards the vertical, V, or click the center to rotate towards both.  You can also rotate the plot in the viewing plane via the cyclone button. The display of triality and axes may be toggled using the checkboxes on the bottom panel. Rotations may be temporarily saved in "Saved Rotations," where some default rotations have been provided.<br/><br/>When a particle is clicked in the viewer, the particles it can interact with will be highlighted in light blue. Selecting one of the highlighted particles reveals the third (and possibly fourth) particle resulting from their interaction, based on charge conservation. This charge balance is illustrated via yellow and green rays, as well as the explicit charges shown summed in the Interaction panel.<br/><br/>CREDITS<br/><br/>This JavaScript/HTML5 implementation is based on a Flash 9 application that was partially funded by a grant from <a href="http://www.fqxi.org/">The Foundational Questions Institute</a>, and built by Troy Gardner of <a href="http://troyworks.com/">troyworks</a>, using the open source troyworks framework. Graphic design was contributed by Prince Pal, and creative assistance was provided by Garrett Lisi.')
+
     function updateTabs(t) {
-        if (t !== undefined) tab = t
-        theory.css('display', tab == 0 ? 'block' : 'none')
-        rotations.css('display', tab == 0 ? 'block' : 'none')
-        interactions.css('display', tab == 1 ? 'block' : 'none')
-        about.css('display', tab == 2 ? 'block' : 'none')
+        if (t !== undefined) g_tab = t
+        theory.css('display', g_tab == 0 ? 'block' : 'none')
+        rotations.css('display', g_tab == 0 ? 'block' : 'none')
+        interactions.css('display', g_tab == 1 ? 'block' : 'none')
+        about.css('display', g_tab == 2 ? 'block' : 'none')
     }
     updateTabs()
-    var tabs = $('<div style="position:absolute;left:0px;top:' + (h-bottomHeight-20) + 'px"/>')
+    var tabs = $('<div style="position:absolute;left:' + x + 'px;top:' + (y - 20) + 'px"/>')
     tabs.append($('<button/>').text('Rotations').click(function () { updateTabs(0) }))
     tabs.append($('<button/>').text('Interactions').click(function () { updateTabs(1) }))
     tabs.append($('<button/>').text('About').click(function () { updateTabs(2) }))
 
     $('body').empty().
-        append(drawVisualization(0, 0, size, size)).
+        append(visualization).
         append(theory).
         append(rotations).
         append(interactions).

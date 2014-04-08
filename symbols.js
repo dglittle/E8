@@ -105,7 +105,7 @@
             if (x) return m.i(x)
 
             x = pull(/^[0-9\+\-]+/)
-            if (x) return m.x(x)
+            if (x) return m.x(x.replace(/-/g, '−'))
 
             x = supsub()
             if (x) return x
@@ -273,5 +273,5 @@ particleSymbols = {
     "238": "x_3 \\overline{\\Ph}",
     "241": "\\ga",
     "242": "X",
-    "243": "XX"
+    "243": "e \\phi_X"
 }

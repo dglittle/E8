@@ -41,7 +41,7 @@ function grabMouse(d, cb, onUp) {
     })
     d.on('touchstart', function (e) {
         e.preventDefault()
-        cb(e.touches[0].pageX, e.touches[0].pageY)
+        cb(e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY)
 
         var oldMove = document.ontouchmove
         document.ontouchmove = function (e) {
@@ -122,10 +122,12 @@ function dot(x, y) {
 function distSq(x) {
     return dot(x, x)
 }
+magSq = distSq
 
 function dist(x) {
     return Math.sqrt(distSq(x))
 }
+mag = dist
 
 function norm(x) {
     return div(x, dist(x))
@@ -251,11 +253,13 @@ $.fn.myAppend = function (args) {
 
 function cssMap(s) {
     var m = {}
-    _.each(s.split(';'), function (s) {
-        var a = s.split(':')
-        if (a[0])
-            m[_.trim(a[0])] = _.trim(a[1])
-    })
+    if (s) {
+        _.each(s.split(';'), function (s) {
+            var a = s.split(':')
+            if (a[0])
+                m[_.trim(a[0])] = _.trim(a[1])
+        })
+    }
     return m
 }
 
