@@ -1,0 +1,43 @@
+<html>
+<head>
+<meta charset='utf-8'>
+<title>E8</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+<style>
+
+body {
+    margin: 0px;
+    font-family: sans-serif;
+}
+table {
+    border-collapse: collapse;
+}
+th, td {
+    padding: 0px;
+}
+
+</style>
+</head>
+<body>
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="http://dglittle.github.io/gl519/index.js"></script>
+<script src="utils.js"></script>
+<script src="particles.js"></script>
+<script src="symbols.js"></script>
+<script>
+
+$(function () {
+    var output = $('<div/>')
+    var d = $('<div style="background:green;width:200px;height:200px"/>')
+    grabMouse(d, function (x, y) {
+        output.html('start: x = ' + x + '<br/>y = ' + y)
+    }, function (x, y) {
+        output.html('drag: x = ' + x + '<br/>y = ' + y)
+    })
+    $('body').append(d).append(output)
+})
+
+</script>
+
+</body>
+</html>
