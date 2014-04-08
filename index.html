@@ -772,7 +772,7 @@ function drawVisualizationSVG(x, y, w, h) {
 
                 var label = cs.shortLabels[i].clone()
                 v = sub(v, mul(.5, cs.shortLabelSizes[i]))
-                d.append($('<div style="position:absolute;z-index:-1;left:' + v[0] + 'px;top:' + v[1] + 'px"/>').append(label))
+                d.append($('<div class="label" style="position:absolute;z-index:-1;left:' + v[0] + 'px;top:' + v[1] + 'px"/>').append(label))
             }
         }
 
@@ -828,43 +828,41 @@ function drawVisualizationSVG(x, y, w, h) {
                 svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth * 3, p))
 
                 labelPos = add(pos, [-20, -45])
-                d.append($('<div style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
+                d.append($('<div class="label" style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
             }
 
-            // work here
-            svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth/3, p))            
-            // svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth/3, p).on('mousemove', function () {
-            //     lastOver = p.id
-            //     if (!dragging) {
-            //         beginModelChange()
-            //         g_m.interactions.over = lastOver
-            //         endModelChange()
-            //     }
-            // }).on('mouseout', function () {
-            //     lastOver = 0
-            //     beginModelChange()
-            //     g_m.interactions.over = lastOver
-            //     endModelChange()
-            // }).on('touchstart', function () {
-            //     lastOver = p.id
-            // }))
+            svg.append(drawParticleSVG(pos[0], pos[1], scale, unitWidth/3, p).on('mousemove', function () {
+                lastOver = p.id
+                if (!dragging) {
+                    beginModelChange()
+                    g_m.interactions.over = lastOver
+                    endModelChange()
+                }
+            }).on('mouseout', function () {
+                lastOver = 0
+                beginModelChange()
+                g_m.interactions.over = lastOver
+                endModelChange()
+            }).on('touchstart', function () {
+                lastOver = p.id
+            }))
         })
 
-    // work here
-        // svg.on('mousemove', function (e) {
-        //     if (e.target == svg[0]) {
-        //         lastOver = 0
-        //         beginModelChange()
-        //         g_m.interactions.over = lastOver
-        //         endModelChange()
-        //     }
-        // })
+        svg.on('mousemove', function (e) {
+            if (e.target == svg[0]) {
+                lastOver = 0
+                beginModelChange()
+                g_m.interactions.over = lastOver
+                endModelChange()
+            }
+        })
 
         return svg
     }
 
     var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px"/>')
     function update() {
+        d.find('.label').remove()
         var svg = d.find('svg')
         if (svg.size() == 0) {
             d.append(draw())
