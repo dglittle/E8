@@ -864,8 +864,9 @@ function drawVisualizationSVG(x, y, w, h) {
 
     var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px"/>')
     function update() {
-        d.children().remove()
-        d.append(draw())
+        d.html('H: ' + g_m.rotate.H[0])
+        // d.children().remove()
+        // d.append(draw())
     }
 
     update()
