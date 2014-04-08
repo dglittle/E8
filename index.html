@@ -862,7 +862,7 @@ function drawVisualizationSVG(x, y, w, h) {
         return svg
     }
 
-    var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
+    var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px"/>')
     function update() {
         d.empty().append(draw())
     }
