@@ -864,10 +864,14 @@ function drawVisualizationSVG(x, y, w, h) {
 
     var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px"/>')
     function update() {
-        d.children().remove()
-        var svg = $('<svg style="width:' + w + 'px;height:' + h + 'px"/>')
-        svg.append(drawSVG('text', { x : 50, y : 50 }, 'fill:red').text('HHH: ' + g_m.rotate.H[0]))
-        d.append(svg)
+        var svg = d.find('svg')
+        if (svg.size() != 0) {
+            svg.empty()
+        } else {
+            svg = $('<svg style="width:' + w + 'px;height:' + h + 'px"/>')
+            d.append(svg)
+        }
+        svg.append(drawSVG('text', { x : 50, y : 50 }, 'fill:red').text('HHHH: ' + g_m.rotate.H[0]))
 
         // d.append($('<div/>').text())
         // d.append($('<svg style>'))
