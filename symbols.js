@@ -24,9 +24,17 @@
             )
         },
         overline : function (x) {
-            // hack
-            return $('<i style="font-family:serif;text-decoration:overline"/>').text(x.text())
-            return $('<div style="border-top:1px solid black"/>').append(x)
+            var oldD = x.css('display')
+            x.css('display', 'none')
+            $('body').append(x)
+            var w = x.width()
+            x.detach()
+            x.css('display', oldD)
+
+            var d = $('<div/>')
+            d.append($('<div style="border-bottom:1px solid black;width:' + w + 'px;height:3px;margin-right:-' + w + 'px;margin-bottom:-3px"/>'))
+            d.append(x)
+            return d
         },
         c : function () {
             var t = $('<table/>')

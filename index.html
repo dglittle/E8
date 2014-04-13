@@ -1106,7 +1106,7 @@ function drawInteractions(x, y) {
     return d
 }
 
-function drawRotationPanel(x, y) {
+function drawRotationPanel(x, y, scale) {
     function drawRotate(yes, cb) {
         var w = g_rowHeight
         var h = g_rowHeight
@@ -1205,8 +1205,8 @@ function drawRotationPanel(x, y) {
 
         function getHorzVert(e) {
             var pos = getRelPos(c, e)
-            var x = _.lerp(0, -1, w, 1, pos[0])
-            var y = _.lerp(0, 1, h, -1, pos[1])
+            var x = _.lerp(0, -1, w * scale, 1, pos[0])
+            var y = _.lerp(0, 1, h * scale, -1, pos[1])
             return [(y > -.4 && y < .4), (x > -.4 && x < .4)]
         }
         function on(e) {
@@ -1263,7 +1263,7 @@ function drawRotationPanel(x, y) {
                 if (vert) g_m.rotate.axes[1] = i
                 g_m.rotate.rotateZ = false
                 endModelChange()
-            })))
+            })).myCss('padding-top:5px;padding-bottom:5px'))
         })
 
         _.each(['H', 'V'], function (x, i) {
@@ -1332,6 +1332,22 @@ function drawTheoryPanel(x, y) {
             return s
         }
 
+        function createListSelect(options, select, cb) {
+            var d = $('<div style="font-size:x-small;width:100%;cursor:pointer"/>')
+            _.each(options, function (name, key) {
+                var o = $('<div class="option" style="width:100%"/>').text(name)
+                if (key === select)
+                    o.myCss('background:#3775D7')
+                o.on('click', function () {
+                    d.find('.option').css('background', '')
+                    o.myCss('background:#3775D7')
+                    if (cb) cb(key)
+                })
+                d.append(o)
+            })
+            return d
+        }
+
         var theories = {
             'sm' : 'Standard Model',
             'gg' : 'Georgi-Glashow SU(5)',
@@ -1345,11 +1361,11 @@ function drawTheoryPanel(x, y) {
             endModelChange()
         })
 
-        var temp = _.splitHorz(2, 1, $('<div style="font-size:small;margin-left:5px"/>').text('Theory'), $('<div style="box-sizing:border-box;width:100%;padding-right:20px;padding-left:10px"/>').append(theorySelect))
-        temp.find('td').attr('valign', 'middle')
-        d.append($('<div style="width:200px;height:' + g_rowHeight + 'px;background: linear-gradient(to bottom, white, lightgrey)"/>').append(temp))
 
-        var t = $('<table style="background:#f0f0f0;width:185px;height:' + g_rowHeight*4 + 'px"/>')
+        var t = $('<table style="box-sizing:border-box;background:#f0f0f0;width:180px;height:' + (g_rowHeight*5 - 10) + 'px"/>')
+
+        var temp = _.splitHorz(2, 1, $('<div style="font-size:small;margin-left:5px"/>').text('Theory:'), $('<div style="box-sizing:border-box;width:100%;padding-right:5px;padding-left:10px"/>').append(theorySelect)).css({'height' : '', 'margin-top' : '10px'})
+        t.append($('<tr/>').append($('<td colspan="2"/>').append(temp)))
 
         var coordinateSelect = createSelect(_.map(g_coordinateSystems, function (cs) { return cs.name }), g_m.coordinateSystem, function (cs) {
             beginModelChange()
@@ -1360,12 +1376,12 @@ function drawTheoryPanel(x, y) {
             endModelChange()
         })
         t.append($('<tr/>').append(
-            $('<td/>').append($('<div style="font-size:small;padding-left:5px;padding-right:10px;padding-top:5px;padding-bottom:10px"/>').text('Coordinates:'))
+            $('<td/>').append($('<div style="font-size:small;padding-left:5px;padding-right:10px;padding-top:5px;padding-bottom:20px"/>').text('Coordinates:'))
         ).append(
-            $('<td style="padding-right:5px"/>').append(coordinateSelect)
+            $('<td style="padding-right:5px;padding-top:5px" valign="top"/>').append(coordinateSelect)
         ))
 
-        var savedRotations = createSelect(_.map(g_db.savedRotations, function (r) { return r.name }), null, function (i) {
+        var savedRotations = $('<div style="width:100%;height:100%;background:white;overflow:auto"/>').append(createListSelect(_.map(g_db.savedRotations, function (r) { return r.name }), null, function (i) {
             var r = g_db.savedRotations[i]
             beginModelChange()
 
@@ -1381,8 +1397,8 @@ function drawTheoryPanel(x, y) {
             // g_m.coordinateSystem = r.coordinateSystem
 
             endModelChange()
+        }))
 
-        }).attr('multiple', 'multiple').myCss('height:100%;width:100%')
         var savedRotationsButtons = $('<div style="font-size:small"/>').text('Saved Rotations').append($('<button style="font-size:x-small;width:60px;margin-top:5px;"/>').text('Save').click(function () {
             var name = prompt('Please enter a name for your rotation')
             if (name) {
@@ -1412,7 +1428,7 @@ function drawTheoryPanel(x, y) {
             $('<td width="100%" style="padding-right:5px;padding-bottom:5px"/>').append(savedRotations)
         ))
 
-        d.append(t)
+        d.append($('<div style="padding-left:5px;padding-top:5px"/>').append(t))
     }
     update()
     d.addClass('onModelChange')[0].onModelChange = function () {
@@ -1428,17 +1444,31 @@ function updateMain() {
     var w = $('body')[0].clientWidth
     var h = $('body')[0].clientHeight
 
+    var controlPanelScale = 1
     var x = w/2 - g_controlPanelWidth/2
-    if (x < 0) x = 0
+    if (x < 0) {
+        controlPanelScale = w / (g_controlPanelWidth + 2)
+        x = 0
+    }
 
-    var size = Math.min(w, h - g_controlPanelHeight)
+    var size = Math.min(w, h - g_controlPanelHeight*controlPanelScale - 5)
     var visualization = drawVisualizationSVG(w/2 - size/2, 0, size, size)
 
-    var y = h - g_controlPanelHeight
-    var theory = drawTheoryPanel(x, y)
-    var rotations = drawRotationPanel(x + 200, y)
-    var interactions = drawInteractions(x, y)
-    var about = $('<div style="box-sizing:border-box;padding:10px;position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + g_controlPanelWidth + 'px;height:' + g_controlPanelHeight + 'px;overflow:auto"/>').html('The Elementary Particle Explorer displays the charges of all <a href="http://en.wikipedia.org/wiki/Elementary_particle">elementary particles</a>, with a symbol assigned to each particle according to <a href="http://en.wikipedia.org/wiki/Antony_Garrett_Lisi">Garrett Lisi</a>\'s <a href="http://arxiv.org/pdf/0711.0770v1.pdf">An Exceptionally Simple Theory of Everything</a> (pdf).<br/><br/>Each particle has two spin charges with respect to the gravitational force, two strong nuclear force charges, and three electroweak charges which combine to equal the electric charge. These charges exist in eight dimensional charge space, and their values correspond to some points of the <a href="http://en.wikipedia.org/wiki/E8_(mathematics)">E8 polytope</a>.<br/><br/>The plot is created by a projection of these points onto a two dimensional plane spanned by a horizontal direction, H, and a vertical direction, V, in eight dimensional charge space.  Any of the eight axes may be selected by pressing the control buttons, and dragged closer to H or V in the viewer, making that kind of charge more apparent in the plot. Select the left-right arrow to choose an axis to rotate towards the horizontal, H, and select the up-down arrow to choose an axis to rotate towards the vertical, V, or click the center to rotate towards both.  You can also rotate the plot in the viewing plane via the cyclone button. The display of triality and axes may be toggled using the checkboxes on the bottom panel. Rotations may be temporarily saved in "Saved Rotations," where some default rotations have been provided.<br/><br/>When a particle is clicked in the viewer, the particles it can interact with will be highlighted in light blue. Selecting one of the highlighted particles reveals the third (and possibly fourth) particle resulting from their interaction, based on charge conservation. This charge balance is illustrated via yellow and green rays, as well as the explicit charges shown summed in the Interaction panel.<br/><br/>CREDITS<br/><br/>This JavaScript/HTML5 implementation is based on a Flash 9 application that was partially funded by a grant from <a href="http://www.fqxi.org/">The Foundational Questions Institute</a>, and built by Troy Gardner of <a href="http://troyworks.com/">troyworks</a>, using the open source troyworks framework. Graphic design was contributed by Prince Pal, and creative assistance was provided by Garrett Lisi.')
+    var y = size - 20*controlPanelScale
+    var controlPanel = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
+    controlPanel.myCss('transform: scale(' + controlPanelScale + ')')
+
+    var theory = drawTheoryPanel(0, 20)
+    controlPanel.append(theory)
+
+    var rotations = drawRotationPanel(200, 20, controlPanelScale)
+    controlPanel.append(rotations)
+
+    var interactions = drawInteractions(0, 20)
+    controlPanel.append(interactions)
+
+    var about = $('<div style="box-sizing:border-box;padding:10px;position:absolute;left:0px;top:20px;width:' + g_controlPanelWidth + 'px;height:' + g_controlPanelHeight + 'px;overflow:auto"/>').html('The Elementary Particle Explorer displays the charges of all <a href="http://en.wikipedia.org/wiki/Elementary_particle">elementary particles</a>, with a symbol assigned to each particle according to <a href="http://en.wikipedia.org/wiki/Antony_Garrett_Lisi">Garrett Lisi</a>\'s <a href="http://arxiv.org/pdf/0711.0770v1.pdf">An Exceptionally Simple Theory of Everything</a> (pdf).<br/><br/>Each particle has two spin charges with respect to the gravitational force, two strong nuclear force charges, and three electroweak charges which combine to equal the electric charge. These charges exist in eight dimensional charge space, and their values correspond to some points of the <a href="http://en.wikipedia.org/wiki/E8_(mathematics)">E8 polytope</a>.<br/><br/>The plot is created by a projection of these points onto a two dimensional plane spanned by a horizontal direction, H, and a vertical direction, V, in eight dimensional charge space.  Any of the eight axes may be selected by pressing the control buttons, and dragged closer to H or V in the viewer, making that kind of charge more apparent in the plot. Select the left-right arrow to choose an axis to rotate towards the horizontal, H, and select the up-down arrow to choose an axis to rotate towards the vertical, V, or click the center to rotate towards both.  You can also rotate the plot in the viewing plane via the cyclone button. The display of triality and axes may be toggled using the checkboxes on the bottom panel. Rotations may be temporarily saved in "Saved Rotations," where some default rotations have been provided.<br/><br/>When a particle is clicked in the viewer, the particles it can interact with will be highlighted in light blue. Selecting one of the highlighted particles reveals the third (and possibly fourth) particle resulting from their interaction, based on charge conservation. This charge balance is illustrated via yellow and green rays, as well as the explicit charges shown summed in the Interaction panel.<br/><br/>CREDITS<br/><br/>This JavaScript/HTML5 implementation is based on a Flash 9 application that was partially funded by a grant from <a href="http://www.fqxi.org/">The Foundational Questions Institute</a>, and built by Troy Gardner of <a href="http://troyworks.com/">troyworks</a>, using the open source troyworks framework. Graphic design was contributed by Prince Pal, and creative assistance was provided by Garrett Lisi.')
+    controlPanel.append(about)
 
     function updateTabs(t) {
         if (t !== undefined) g_tab = t
@@ -1448,18 +1478,15 @@ function updateMain() {
         about.css('display', g_tab == 2 ? 'block' : 'none')
     }
     updateTabs()
-    var tabs = $('<div style="position:absolute;left:' + x + 'px;top:' + (y - 20) + 'px"/>')
+    var tabs = $('<div style="position:absolute;left:0px;top:0px;width:' + g_controlPanelWidth + 'px"/>')
     tabs.append($('<button/>').text('Rotations').click(function () { updateTabs(0) }))
     tabs.append($('<button/>').text('Interactions').click(function () { updateTabs(1) }))
     tabs.append($('<button/>').text('About').click(function () { updateTabs(2) }))
+    controlPanel.append(tabs)
 
     $('body').empty().
         append(visualization).
-        append(theory).
-        append(rotations).
-        append(interactions).
-        append(about).
-        append(tabs)
+        append(controlPanel)
 }
 
 function loadDb() {
