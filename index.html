@@ -876,6 +876,11 @@ function drawVisualizationSVG(x, y, w, h) {
     var dragging = false
     var lastOver = 0
     grabMouseRelative(d, function (dx, dy, x, y) {
+
+        // work here
+        if (dx == 0 && dy == 0) g_debugNum++
+        g_debug.text('debug: ' + g_debugNum)
+
         dragging = true
         if (!downPos) downPos = [x, y]
         if (dx == 0 && dy == 0) return
@@ -951,6 +956,11 @@ function drawVisualizationSVG(x, y, w, h) {
         g_m.rotate.V = V_
         endModelChange()
     }, function (x, y) {
+
+        // work here
+        g_debugNum++
+        g_debug.text('debug: ' + g_debugNum)
+
         dragging = false
         if (dist(sub([x, y], downPos)) < 5) {
             var id = lastOver
@@ -1482,6 +1492,12 @@ function updateMain() {
     tabs.append($('<button/>').text('Rotations').click(function () { updateTabs(0) }))
     tabs.append($('<button/>').text('Interactions').click(function () { updateTabs(1) }))
     tabs.append($('<button/>').text('About').click(function () { updateTabs(2) }))
+
+    // work here
+    g_debug = null
+    g_debugNum = 0
+    tabs.append(g_debug = $('<span/>').text('debug'))
+
     controlPanel.append(tabs)
 
     $('body').empty().
