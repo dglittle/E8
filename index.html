@@ -345,8 +345,11 @@ function p2p_color_to_id(r, g, b, a) {
 })();
 
 function drawVisualization(x, y, w, h) {
-    var w2 = w*2
-    var h2 = h*2
+    w = Math.floor(w)
+    h = Math.floor(h)
+    var superScale = 2
+    var w2 = w*superScale
+    var h2 = h*superScale
     var pixelToParticleMap = null
 
     function updatePixelToParticleMap() {
@@ -363,14 +366,18 @@ function drawVisualization(x, y, w, h) {
     }    
 
     function draw(p2p, c) {
-        if (!c) {
+        if (p2p) {
+            c = $('<canvas/>').attr('width', w).attr('height', h)
+            var g = c[0].getContext('2d')
+            g.setTransform(w/3, 0, 0, -h/3, w/2, h/2)
+        } else if (!c) {
             c = $('<canvas style="width:' + w + 'px;height:' + h + 'px"/>').attr('width', w2).attr('height', h2)
             var g = c[0].getContext('2d')
+            g.setTransform(w2/3, 0, 0, -h2/3, w2/2, h2/2)
         } else {
             var g = c[0].getContext('2d')
             g.clearRect(-1.5, -1.5, 3, 3)
         }
-        g.setTransform(w2/3, 0, 0, -h2/3, w2/2, h2/2)
         var unitWidth = 3/w
 
         var H = g_m.rotate.H
@@ -491,7 +498,6 @@ function drawVisualization(x, y, w, h) {
     var updateP2P = true
     var prevC = null
     function update() {
-
         if (!prevC) {
             d.append(prevC = draw())
         } else {
