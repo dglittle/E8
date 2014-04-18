@@ -1464,7 +1464,9 @@ function updateMain() {
     }
 
     var size = Math.min(w, h - g_controlPanelHeight*controlPanelScale - 5)
-    var visualization = drawVisualizationSVG(w/2 - size/2, 0, size, size)
+    // work here
+    var visualization = drawVisualization(w/2 - size/2, 0, size, size)
+//    var visualization = mobile ? drawVisualization(w/2 - size/2, 0, size, size) : drawVisualizationSVG(w/2 - size/2, 0, size, size)
 
     var y = size - 20*controlPanelScale
     var controlPanel = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
