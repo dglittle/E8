@@ -513,14 +513,6 @@ function drawVisualization(x, y, w, h) {
     update()
     var downPos = null
     grabMouseRelative(d, function (dx, dy, x, y) {
-
-
-        // work here
-        if (!g_debug.downs) g_debug.downs = 0
-        if (dx == 0 && dy == 0) g_debug.downs++
-        g_debug.text('debug: ' + g_debug.downs + ', ' + g_debug.ups)
-
-
         if (!downPos) downPos = [x, y]
         updateP2P = false
         if (dx == 0 && dy == 0) return
@@ -596,14 +588,6 @@ function drawVisualization(x, y, w, h) {
         g_m.rotate.V = V_
         endModelChange()
     }, function (x, y) {
-
-
-        // work here
-        if (!g_debug.ups) g_debug.ups = 0
-        g_debug.ups++
-        g_debug.text('debug: ' + g_debug.downs + ', ' + g_debug.ups)
-
-
         updateP2P = true
         update()
 
@@ -879,9 +863,7 @@ function drawVisualizationSVG(x, y, w, h) {
                 beginModelChange()
                 g_m.interactions.over = lastOver
                 endModelChange()
-            })/* work here .on('touchstart', function () {
-                lastOver = p.id
-            })*/)
+            }))
         })
 
         svg.on('mousemove', function (e) {
@@ -912,12 +894,6 @@ function drawVisualizationSVG(x, y, w, h) {
     var dragging = false
     var lastOver = 0
     grabMouseRelative(d, function (dx, dy, x, y) {
-
-        // work here
-        if (!g_debug.downs) g_debug.downs = 0
-        if (dx == 0 && dy == 0) g_debug.downs++
-        g_debug.text('debug: ' + g_debug.downs + ', ' + g_debug.ups)
-
         dragging = true
         if (!downPos) downPos = [x, y]
         if (dx == 0 && dy == 0) return
@@ -993,12 +969,6 @@ function drawVisualizationSVG(x, y, w, h) {
         g_m.rotate.V = V_
         endModelChange()
     }, function (x, y) {
-
-        // work here
-        if (!g_debug.ups) g_debug.ups = 0
-        g_debug.ups++
-        g_debug.text('debug: ' + g_debug.downs + ', ' + g_debug.ups)
-
         dragging = false
         if (dist(sub([x, y], downPos)) < 5) {
             var id = lastOver
@@ -1499,10 +1469,9 @@ function updateMain() {
         x = 0
     }
 
-    var size = Math.min(w, h - g_controlPanelHeight*controlPanelScale - 5)
-    // work here
-    var visualization = drawVisualization(w/2 - size/2, 0, size, size)
-//    var visualization = mobile ? drawVisualization(w/2 - size/2, 0, size, size) : drawVisualizationSVG(w/2 - size/2, 0, size, size)
+    var size = Math.floor(Math.min(w, h - g_controlPanelHeight*controlPanelScale - 5))
+    var visualization = drawVisualization(Math.floor(w/2 - size/2), 0, size, size)
+    // var visualization = (isMobile() ? drawVisualization : drawVisualizationSVG)(Math.floor(w/2 - size/2), 0, size, size)
 
     var y = size - 20*controlPanelScale
     var controlPanel = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
@@ -1532,11 +1501,6 @@ function updateMain() {
     tabs.append($('<button/>').text('Rotations').click(function () { updateTabs(0) }))
     tabs.append($('<button/>').text('Interactions').click(function () { updateTabs(1) }))
     tabs.append($('<button/>').text('About').click(function () { updateTabs(2) }))
-
-    // work here
-    g_debug = null
-    tabs.append(g_debug = $('<span/>').text('debug'))
-
     controlPanel.append(tabs)
 
     $('body').empty().
