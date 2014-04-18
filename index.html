@@ -843,9 +843,9 @@ function drawVisualizationSVG(x, y, w, h) {
                 beginModelChange()
                 g_m.interactions.over = lastOver
                 endModelChange()
-            }).on('touchstart', function () {
+            })/* work here .on('touchstart', function () {
                 lastOver = p.id
-            }))
+            })*/)
         })
 
         svg.on('mousemove', function (e) {
