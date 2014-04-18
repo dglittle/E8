@@ -493,6 +493,14 @@ function drawVisualization(x, y, w, h) {
     update()
     var downPos = null
     grabMouseRelative(d, function (dx, dy, x, y) {
+
+
+        // work here
+        if (!g_debug.downs) g_debug.downs = 0
+        if (dx == 0 && dy == 0) g_debug.downs++
+        g_debug.text('debug: ' + g_debug.downs + ', ' + g_debug.ups)
+
+
         if (!downPos) downPos = [x, y]
         updateP2P = false
         if (dx == 0 && dy == 0) return
@@ -568,6 +576,14 @@ function drawVisualization(x, y, w, h) {
         g_m.rotate.V = V_
         endModelChange()
     }, function (x, y) {
+
+
+        // work here
+        if (!g_debug.up) g_debug.up = 0
+        g_debug.up++
+        g_debug.text('debug: ' + g_debug.downs + ', ' + g_debug.ups)
+
+
         updateP2P = true
         update()
 
