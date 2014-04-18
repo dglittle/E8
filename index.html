@@ -591,6 +591,10 @@ function drawVisualization(x, y, w, h) {
         updateP2P = true
         update()
 
+        // work here
+        var dd = dist(sub([x, y], downPos))
+        g_debug.text('dd = ' + dd)
+
         if (dist(sub([x, y], downPos)) < 5) {
             var id = getOverParticle({ pageX : x, pageY : y })
             if (id) {
@@ -1500,7 +1504,9 @@ function updateMain() {
     var tabs = $('<div style="position:absolute;left:0px;top:0px;width:' + g_controlPanelWidth + 'px"/>')
     tabs.append($('<button/>').text('Rotations').click(function () { updateTabs(0) }))
     tabs.append($('<button/>').text('Interactions').click(function () { updateTabs(1) }))
-    tabs.append($('<button/>').text('About').click(function () { updateTabs(2) }))
+    // work here
+    g_debug = null
+    tabs.append(g_debug = $('<button/>').text('About').click(function () { updateTabs(2) }))
     controlPanel.append(tabs)
 
     $('body').empty().
