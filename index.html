@@ -878,8 +878,9 @@ function drawVisualizationSVG(x, y, w, h) {
     grabMouseRelative(d, function (dx, dy, x, y) {
 
         // work here
-        if (dx == 0 && dy == 0) g_debugNum++
-        g_debug.text('debug: ' + g_debugNum)
+        if (!g_debug.downs) g_debug.downs = 0
+        if (dx == 0 && dy == 0) g_debug.downs++
+        g_debug.text('debug: ' + g_debug.downs + ', ' + g_debug.ups)
 
         dragging = true
         if (!downPos) downPos = [x, y]
@@ -958,8 +959,9 @@ function drawVisualizationSVG(x, y, w, h) {
     }, function (x, y) {
 
         // work here
-        g_debugNum++
-        g_debug.text('debug: ' + g_debugNum)
+        if (!g_debug.ups) g_debug.ups = 0
+        g_debug.ups++
+        g_debug.text('debug: ' + g_debug.downs + ', ' + g_debug.ups)
 
         dragging = false
         if (dist(sub([x, y], downPos)) < 5) {
@@ -1495,7 +1497,6 @@ function updateMain() {
 
     // work here
     g_debug = null
-    g_debugNum = 0
     tabs.append(g_debug = $('<span/>').text('debug'))
 
     controlPanel.append(tabs)
