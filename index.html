@@ -360,9 +360,14 @@ function drawVisualization(x, y, w, h) {
         ]
     }    
 
-    function draw(p2p) {
-        var c = $('<canvas/>').attr('width', w).attr('height', h)
-        var g = c[0].getContext('2d')
+    function draw(p2p, c) {
+        if (!c) {
+            c = $('<canvas/>').attr('width', w).attr('height', h)
+            var g = c[0].getContext('2d')
+        } else {
+            var g = c[0].getContext('2d')
+            g.clearRect(-1.5, -1.5, 3, 3)
+        }
         g.setTransform(w/3, 0, 0, -h/3, w/2, h/2)
         var unitWidth = 3/w
 
@@ -402,7 +407,7 @@ function drawVisualization(x, y, w, h) {
 
                     var label = cs.shortLabels[i].clone()
                     v = sub(v, mul(.5, cs.shortLabelSizes[i]))
-                    d.append($('<div style="position:absolute;z-index:-1;left:' + v[0] + 'px;top:' + v[1] + 'px"/>').append(label))
+                    d.append($('<div class="label" style="position:absolute;z-index:-1;left:' + v[0] + 'px;top:' + v[1] + 'px"/>').append(label))
                 }
             }
 
@@ -471,7 +476,7 @@ function drawVisualization(x, y, w, h) {
 
                     var labelPos = transformPoint([x, y], w/3, 0, 0, -h/3, w/2, h/2)
                     labelPos = add(labelPos, [-20, -45])
-                    d.append($('<div style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
+                    d.append($('<div class="label" style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
                 }
             }
             renderParticle(g, x, y, scale, unitWidth/3, p, p2p)
@@ -482,8 +487,15 @@ function drawVisualization(x, y, w, h) {
 
     var d = $('<div style="position:absolute;left:' + x + 'px;top:' + y + 'px"/>')
     var updateP2P = true
+    var prevC = null
     function update() {
-        d.empty().append(draw())
+
+        if (!prevC) {
+            d.append(prevC = draw())
+        } else {
+            d.find('.label').remove()
+            draw(null, prevC)
+        }
         if (updateP2P)
             updatePixelToParticleMap()
         else
