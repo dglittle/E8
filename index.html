@@ -257,10 +257,6 @@ function p2p_id_to_color(id) {
 }
 
 function p2p_color_to_id(r, g, b, a) {
-
-    // work here
-    g_debug.text('rgba: ' + [r, g, b].join(','))
-
     if (a != 255) return
     var low = r % 16
     if (low != Math.floor(r / 16)) return
@@ -1505,10 +1501,7 @@ function updateMain() {
     tabs.append($('<button/>').text('Rotations').click(function () { updateTabs(0) }))
     tabs.append($('<button/>').text('Interactions').click(function () { updateTabs(1) }))
 
-    // work here
-    g_debug = null
-
-    tabs.append(g_debug = $('<button/>').text('About').click(function () { updateTabs(2) }))
+    tabs.append($('<button/>').text('About').click(function () { updateTabs(2) }))
     controlPanel.append(tabs)
 
     $('body').empty().
