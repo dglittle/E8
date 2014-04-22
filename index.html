@@ -247,27 +247,17 @@ var g_coordinateSystemsConversions = {
     }
 }
 
-function p2p_id_to_color(id) {
-    var low = id % 16
-    var high = Math.floor(id / 16)
-    var r = low * 16 + low
-    var g = high * 16 + high
-    var b = high * 16 + low
-    return 'rgb(' + r + ',' + g + ',' + b + ')'
-}
-
-function p2p_color_to_id(r, g, b, a) {
-    if (a != 255) return
-    var low = r % 16
-    if (low != Math.floor(r / 16)) return
-    var high = g % 16
-    if (high != Math.floor(g / 16)) return
-    if (high != Math.floor(b / 16)) return
-    if (low != b % 16) return
-    return high * 16 + low
-}
-
 ;(function () {
+    p2p_colors = _.map(particles, function () {
+        var r = Math.floor(Math.random() * 256)
+        var g = Math.floor(Math.random() * 256)
+        var b = Math.floor(Math.random() * 256)
+        return {
+            color : [r, g, b],
+            css : 'rgb(' + r + ',' + g + ',' + b + ')'
+        }
+    })
+
     function circle(g, x, y, size) {
         g.beginPath()
         g.arc(x, y, size, 0, tau)
@@ -322,7 +312,7 @@ function p2p_color_to_id(r, g, b, a) {
         g.closePath()
     }
     renderParticle = function (g, x, y, scale, lineWidth, p, p2p, justLine) {
-        if (p2p) p2p = p2p_id_to_color(p.id)
+        if (p2p) p2p = p2p_colors[p.id - 1].css
         var size = p.symbol[0] == 's' ? .8 : 1
         var sym = p.symbol.slice(1)
         if (sym == 'cir') {
@@ -351,6 +341,8 @@ function drawVisualization(x, y, w, h) {
     var w2 = w*superScale
     var h2 = h*superScale
     var pixelToParticleMap = null
+    var p2p_transform = null
+    var p2p_positions = null
 
     function updatePixelToParticleMap() {
         var c = draw(true)
@@ -370,6 +362,10 @@ function drawVisualization(x, y, w, h) {
             c = $('<canvas/>').attr('width', w).attr('height', h)
             var g = c[0].getContext('2d')
             g.setTransform(w/3, 0, 0, -h/3, w/2, h/2)
+            p2p_transform = function (pos) {
+                return [(pos[0] - w/2)*(3/w), (pos[1] - h/2)*(-3/h)]
+            }
+            p2p_positions = []
         } else if (!c) {
             c = $('<canvas style="width:' + w + 'px;height:' + h + 'px"/>').attr('width', w2).attr('height', h2)
             var g = c[0].getContext('2d')
@@ -487,6 +483,12 @@ function drawVisualization(x, y, w, h) {
                     labelPos = add(labelPos, [-20, -45])
                     d.append($('<div class="label" style="position:absolute;z-index:1000;left:' + labelPos[0] + 'px;top:' + labelPos[1] + 'px"/>').append(drawLatex(particleSymbols[p.name])))
                 }
+            } else {
+                p2p_positions.push({
+                    p : p,
+                    pos : [x, y],
+                    size : scale
+                })
             }
             renderParticle(g, x, y, scale, unitWidth/3, p, p2p)
         })
@@ -628,7 +630,18 @@ function drawVisualization(x, y, w, h) {
         if (pixelToParticleMap) {
             var pos = _.map(getRelPos(d, e), Math.round)
             var base = pos[0]*4 + pos[1]*4*w
-            return p2p_color_to_id(pixelToParticleMap[base], pixelToParticleMap[base+1], pixelToParticleMap[base+2], pixelToParticleMap[base+3])
+            var color = [pixelToParticleMap[base], pixelToParticleMap[base+1], pixelToParticleMap[base+2]]
+
+            pos = p2p_transform(pos)
+            var p = _.min(_.filter(p2p_positions, function (p) {
+                return pos[0] > p.pos[0] - p.size &&
+                    pos[0] < p.pos[0] + p.size &&
+                    pos[1] > p.pos[1] - p.size &&
+                    pos[1] < p.pos[1] + p.size
+            }), function (p) {
+                return dist(sub(color, p2p_colors[p.p.id - 1].color))
+            })
+            return p && p.p.id
         }
     }
 
