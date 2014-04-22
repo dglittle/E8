@@ -53,7 +53,7 @@ function grabMouse(d, cb, onUp) {
         document.ontouchmove = function (e) {
             if (e.touches.length != 1) return
 
-            e.preventDefault()
+            // e.preventDefault()
             cb(e.touches[0].pageX, e.touches[0].pageY)
         }
 
