@@ -51,7 +51,7 @@ function grabMouse(d, cb, onUp) {
 
         var oldMove = document.ontouchmove
         document.ontouchmove = function (e) {
-            if (e.originalEvent.touches.length != 1) return
+            if (e.touches.length != 1) return
 
             e.preventDefault()
             cb(e.touches[0].pageX, e.touches[0].pageY)
