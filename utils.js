@@ -43,14 +43,29 @@ function grabMouse(d, cb, onUp) {
             document.onmouseup = oldUp
         }
     })
+
+    var prevPos = null
     d.on('touchstart', function (e) {
         e.preventDefault()
-        cb(e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY)
+        if (e.originalEvent.touches.length == 1) {
+            cb(e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY)
+        } else {
+            prevPos = [e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY]
+        }
 
         var oldMove = document.ontouchmove
         document.ontouchmove = function (e) {
             e.preventDefault()
-            cb(e.touches[0].pageX, e.touches[0].pageY)
+            if (e.touches.length == 1) {
+                cb(e.touches[0].pageX, e.touches[0].pageY)
+            } else {
+                var pos = [e.touches[0].pageX, e.touches[0].pageY]
+                var diff = sub(pos, prevPos)
+                prevPos = pos
+                var w = $(window)
+                w.scrollLeft(w.scrollLeft() - diff[0])
+                w.scrollTop(w.scrollTop() - diff[1])
+            }
         }
 
         var oldEnd = document.ontouchend;
