@@ -64,8 +64,6 @@ function grabMouse(d, cb, onUp) {
                 var w = $(window)
                 w.scrollLeft(w.scrollLeft() - diff[0])
                 w.scrollTop(w.scrollTop() - diff[1])
-                // work here
-                //prevPos = pos
             }
         }
 
