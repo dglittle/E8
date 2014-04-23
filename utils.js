@@ -44,16 +44,12 @@ function grabMouse(d, cb, onUp) {
         }
     })
     d.on('touchstart', function (e) {
-        if (e.originalEvent.touches.length != 1) return
-
         e.preventDefault()
         cb(e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY)
 
         var oldMove = document.ontouchmove
         document.ontouchmove = function (e) {
-            if (e.touches.length != 1) return
-
-            // e.preventDefault()
+            e.preventDefault()
             cb(e.touches[0].pageX, e.touches[0].pageY)
         }
 
