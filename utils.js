@@ -53,6 +53,11 @@ function grabMouse(d, cb, onUp) {
             prevPos = [e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY]
         }
 
+        var oldStart = document.ontouchstart
+        document.ontouchstart = function (e) {
+            e.preventDefault()
+        }
+
         var oldMove = document.ontouchmove
         document.ontouchmove = function (e) {
             e.preventDefault()
@@ -71,6 +76,7 @@ function grabMouse(d, cb, onUp) {
         var oldCancel = document.ontouchcancel
         document.ontouchend = document.ontouchcancel = function (e) {
             if (onUp) onUp()
+            document.ontouchstart = oldStart
             document.ontouchmove = oldMove
             document.ontouchend = oldEnd
             document.ontouchcancel = oldCancel
